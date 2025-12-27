@@ -478,9 +478,8 @@ remote_cases = ["case1", "case2", "case3"]
             end
         end
 
-        # Test actual download attempt (network error expected until repo is set up)
-        # NOTE: This test verifies the download attempt fails properly when the
-        # remote repository (cuihantao/PowerfulCases) is not yet set up.
+        # Test actual download of remote case from GitHub
+        # This verifies the remote download works correctly with cuihantao/PowerfulCases repo
         if !isempty(registry.remote_cases)
             original = get_cache_dir()
             try
@@ -488,17 +487,23 @@ remote_cases = ["case1", "case2", "case3"]
                     set_cache_dir(dir)
                     case_name = registry.remote_cases[1]
 
-                    # Try to download - should fail with HTTP 404 until repo exists
-                    try
-                        download_remote_case(case_name; force=true)
-                        # If we get here, download worked (repo exists)
-                        case_dir = joinpath(dir, case_name)
-                        @test isdir(case_dir)
-                        @test isfile(joinpath(case_dir, "manifest.toml"))
-                    catch e
-                        # Expected: HTTP 404 or network error
-                        @test e isa Downloads.RequestError || e isa ErrorException
-                    end
+                    # Download the remote case
+                    result = download_remote_case(case_name; force=true)
+                    case_dir = joinpath(dir, case_name)
+
+                    # Verify download succeeded
+                    @test result == case_dir
+                    @test isdir(case_dir)
+                    @test isfile(joinpath(case_dir, "manifest.toml"))
+
+                    # Parse manifest and verify files were downloaded
+                    manifest = parse_manifest(joinpath(case_dir, "manifest.toml"))
+                    @test manifest.name == case_name
+                    @test !isempty(manifest.files)
+
+                    # Check at least the first file exists
+                    first_file = manifest.files[1].path
+                    @test isfile(joinpath(case_dir, first_file))
                 end
             finally
                 set_cache_dir(original)

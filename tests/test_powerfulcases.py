@@ -659,18 +659,15 @@ class TestDownloadErrorHandling:
         finally:
             set_cache_dir(original)
 
-    def test_download_remote_case_network_error(self):
-        """Test download_remote_case fails gracefully when remote is unavailable.
+    def test_download_remote_case_success(self):
+        """Test successful download of remote case from GitHub.
 
-        NOTE: This test verifies that the download attempt fails properly when
-        the remote repository (cuihantao/PowerfulCases) is not yet set up.
-        Once the repository is created and cases are uploaded, this test
-        should be updated to verify successful downloads.
+        Verifies the remote download works correctly with the cuihantao/PowerfulCases repo.
         """
         from powerfulcases.registry import download_remote_case, load_registry
         from powerfulcases.cache import set_cache_dir, get_cache_dir
+        from powerfulcases.manifest import parse_manifest
         from pathlib import Path
-        import urllib.error
 
         original = get_cache_dir()
         registry = load_registry()
@@ -684,23 +681,24 @@ class TestDownloadErrorHandling:
                 cache_dir = Path(tmpdir)
                 set_cache_dir(cache_dir)
 
-                # Try to download a known remote case (not cached)
+                # Download a known remote case
                 case_name = registry.remote_cases[0]
+                result = download_remote_case(case_name, force=True)
+                case_dir = cache_dir / case_name
 
-                # Should fail because remote repo doesn't exist yet
-                try:
-                    download_remote_case(case_name, force=True)
-                    # If we get here, the download worked (repo exists)
-                    # Verify the downloaded files exist
-                    case_dir = cache_dir / case_name
-                    assert case_dir.is_dir(), f"Case directory should exist: {case_dir}"
-                    assert (case_dir / "manifest.toml").is_file(), "manifest.toml should exist"
-                except urllib.error.HTTPError as e:
-                    # Expected: 404 because repo doesn't exist yet
-                    assert e.code == 404, f"Expected 404 error, got {e.code}"
-                except urllib.error.URLError as e:
-                    # Network error (no internet, DNS failure, etc.)
-                    pass  # This is acceptable in offline environments
+                # Verify download succeeded
+                assert result == case_dir
+                assert case_dir.is_dir(), f"Case directory should exist: {case_dir}"
+                assert (case_dir / "manifest.toml").is_file(), "manifest.toml should exist"
+
+                # Parse manifest and verify files were downloaded
+                manifest = parse_manifest(case_dir / "manifest.toml")
+                assert manifest.name == case_name
+                assert len(manifest.files) > 0, "Manifest should have files"
+
+                # Check at least the first file exists
+                first_file = manifest.files[0].path
+                assert (case_dir / first_file).is_file(), f"First file should exist: {first_file}"
         finally:
             set_cache_dir(original)
 
