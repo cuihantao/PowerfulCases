@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+*.egg
+.eggs/
+.pytest_cache/
+
+# Julia
+Manifest.toml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

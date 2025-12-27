@@ -1,5 +1,5 @@
 """
-PowerfulCases - Test case data for Powerful.jl power systems simulation
+PowerfulCases - Test case data for power systems simulation
 
 Provides IEEE test cases, synthetic grid cases, and dynamic model data files
 with a bundle-based API for easy access.

@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "powerfulcases"
 version = "0.2.0"
-description = "Test case data for Powerful.jl power systems simulation"
+description = "Test case data for power systems simulation"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "Powerful.jl Authors"}
+    {name = "Hantao Cui", email = "cuihantao@gmail.com"}
 ]
 dependencies = [
     "click>=8.0",
@@ -36,8 +36,8 @@ pcase = "powerfulcases.cli:main"
 powerfulcases = "powerfulcases.cli:main"  # long form alias
 
 [project.urls]
-Homepage = "https://github.com/your-org/Powerful.jl"
-Repository = "https://github.com/your-org/Powerful.jl"
+Homepage = "https://github.com/cuihantao/PowerfulCases"
+Repository = "https://github.com/cuihantao/PowerfulCases"
 
 [tool.setuptools.packages.find]
 where = ["."]

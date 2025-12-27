@@ -7,7 +7,7 @@ Test case data management for power systems simulation. Works with both Julia an
 **Julia:**
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/your-org/Powerful.jl", subdir="PowerfulCases")
+Pkg.add(url="https://github.com/cuihantao/PowerfulCases")
 ```
 
 **Python:**
