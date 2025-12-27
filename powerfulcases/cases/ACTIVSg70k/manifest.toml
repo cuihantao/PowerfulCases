@@ -1,0 +1,8 @@
+name = "ACTIVSg70k"
+description = "ACTIVS 70,000-bus synthetic case"
+
+[[files]]
+path = "ACTIVSg70k.raw"
+format = "psse_raw"
+format_version = "33"
+default = true

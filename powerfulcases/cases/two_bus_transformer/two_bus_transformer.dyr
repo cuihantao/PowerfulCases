@@ -1,0 +1,5 @@
+// Two-bus transformer case - DYR file
+// Simple test case with one GENCLS generator
+
+// Format: BUS 'MODEL' ID H D /
+      1 'GENCLS' 1     5.0000       0.0000    /

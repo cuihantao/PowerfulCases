@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "powerfulcases"
+version = "0.2.0"
+description = "Test case data for Powerful.jl power systems simulation"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Powerful.jl Authors"}
+]
+dependencies = [
+    "click>=8.0",
+    "toml>=0.10",
+    "tomli>=2.0; python_version < '3.11'",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+keywords = ["power systems", "simulation", "test cases", "IEEE"]
+
+[project.scripts]
+pcase = "powerfulcases.cli:main"
+powerfulcases = "powerfulcases.cli:main"  # long form alias
+
+[project.urls]
+Homepage = "https://github.com/your-org/Powerful.jl"
+Repository = "https://github.com/your-org/Powerful.jl"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["powerfulcases*"]
+exclude = ["src*", "test*"]
+
+[tool.setuptools.package-data]
+powerfulcases = [
+    "py.typed",
+    "cases/**/*",
+]
+
+# Exclude patterns for remote cases are generated dynamically by setup.py
+# based on remote_cases list in registry.toml

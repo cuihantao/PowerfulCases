@@ -1,0 +1,14 @@
+name = "npcc"
+description = "NPCC (Northeast Power Coordinating Council) test system"
+
+[[files]]
+path = "npcc.raw"
+format = "psse_raw"
+format_version = "33"
+default = true
+
+[[files]]
+path = "npcc_full.dyr"
+format = "psse_dyr"
+default = true
+variant = "full"

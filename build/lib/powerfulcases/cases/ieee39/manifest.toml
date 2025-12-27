@@ -1,0 +1,8 @@
+name = "ieee39"
+description = "IEEE 39-bus (New England) test system"
+
+[[files]]
+path = "ieee39.raw"
+format = "psse_raw"
+format_version = "33"
+default = true

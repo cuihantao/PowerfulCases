@@ -1,0 +1,574 @@
+"""
+PowerfulCases - Test case data for Powerful.jl power systems simulation
+
+Provides IEEE test cases, synthetic grid cases, and dynamic model data files
+with a bundle-based API for easy access.
+
+# New API (Recommended)
+```julia
+using PowerfulCases
+
+# Load a case (built-in, remote, or local directory)
+case = load_case("ieee14")
+case = load_case("/path/to/my/project")
+
+# Access files by format
+case.raw                                    # Default RAW file
+case.dyr                                    # Default DYR file
+get_file(case, :raw)                        # Same as case.raw
+get_file(case, :raw, format_version="34")   # Specific PSS/E version
+get_file(case, :dyr, variant="genrou")      # Specific variant
+
+# Discovery
+list_cases()                    # All available cases
+list_files(case)                # Files with format info
+list_formats(case)              # Available formats
+list_variants(case, :dyr)       # Variants for a format
+
+# Cache management (for remote cases)
+download_case("activsg70k")     # Pre-download large case
+clear_cache("activsg70k")       # Remove from cache
+```
+
+# Legacy API (Deprecated)
+```julia
+case = ieee14()        # Still works, emits deprecation warning
+case.raw               # Works
+get_dyr(case, "genrou") # Works
+```
+"""
+module PowerfulCases
+
+using TOML
+
+# Include submodules
+include("manifest.jl")
+include("cache.jl")
+include("registry.jl")
+
+# Re-export key functions from submodules
+export load_case, get_file, list_cases, list_files, list_formats, list_variants
+export create_manifest
+export download_case, clear_cache, set_cache_dir, cache_info
+export CaseBundle, Manifest, FileEntry, Credits, Citation
+export get_credits, get_license, get_authors, get_maintainers, get_citations, has_credits
+
+# Public alias for download_case (maps to download_remote_case)
+"""
+    download_case(name::AbstractString; force::Bool=false) -> String
+
+Download a remote case to the local cache.
+Use this to pre-download large cases for offline use.
+
+# Arguments
+- `name`: Case name to download
+- `force`: If true, re-download even if already cached
+
+# Example
+```julia
+download_case("ACTIVSg70k")  # Pre-download large case
+case = load_case("ACTIVSg70k")  # Now loads from cache
+```
+"""
+const download_case = download_remote_case
+
+const CASES_DIR = joinpath(@__DIR__, "..", "powerfulcases", "cases")
+
+"""
+    CaseBundle
+
+A bundle containing paths to a power system test case and its data files.
+
+# Fields
+- `name::String` - Case name (e.g., "ieee14")
+- `dir::String` - Path to case directory
+- `manifest::Manifest` - Parsed manifest with file metadata
+- `is_remote::Bool` - True if loaded from remote cache
+"""
+struct CaseBundle
+    name::String
+    dir::String
+    manifest::Manifest
+    is_remote::Bool
+end
+
+# Property access for CaseBundle - convenience shortcuts
+function Base.getproperty(cb::CaseBundle, prop::Symbol)
+    if prop in (:name, :dir, :manifest, :is_remote)
+        return getfield(cb, prop)
+    elseif prop === :raw
+        return get_file(cb, :psse_raw)
+    elseif prop === :dyr
+        path = get_file(cb, :psse_dyr; required=false)
+        return path
+    elseif prop === :matpower
+        return get_file(cb, :matpower)
+    elseif prop === :psat
+        return get_file(cb, :psat)
+    else
+        # Try as a format symbol
+        try
+            return get_file(cb, prop)
+        catch e
+            # Include original exception for debugging context
+            error("CaseBundle has no property :$prop. Available formats: $(list_formats(cb)). Original error: $e")
+        end
+    end
+end
+
+Base.propertynames(cb::CaseBundle) = (:name, :dir, :manifest, :is_remote, :raw, :dyr, list_formats(cb)...)
+
+"""
+    load_case(name_or_path::AbstractString) -> CaseBundle
+
+Load a case bundle by name or path.
+
+# Arguments
+- `name_or_path`: Either a case name (e.g., "ieee14") or a path to a local directory
+
+# Examples
+```julia
+# Built-in case
+case = load_case("ieee14")
+
+# Local directory
+case = load_case("/path/to/my/project")
+```
+"""
+function load_case(name_or_path::AbstractString)
+    # Check if it's a path (contains / or \\ or is absolute)
+    if isdir(name_or_path)
+        return _load_local_case(name_or_path)
+    end
+
+    # Check if it's a known bundled case
+    bundled_dir = joinpath(CASES_DIR, name_or_path)
+    if isdir(bundled_dir)
+        return _load_bundled_case(name_or_path, bundled_dir)
+    end
+
+    # Check if it's a remote case
+    if is_remote_case(name_or_path)
+        return _load_remote_case(name_or_path)
+    end
+
+    # Not found
+    available = list_cases()
+    error("Unknown case: '$name_or_path'. Available cases: $(join(available, ", "))")
+end
+
+function _load_bundled_case(name::AbstractString, dir::AbstractString)
+    manifest_path = joinpath(dir, "manifest.toml")
+    if isfile(manifest_path)
+        manifest = parse_manifest(manifest_path)
+    else
+        manifest = infer_manifest(dir)
+    end
+    CaseBundle(name, dir, manifest, false)
+end
+
+function _load_local_case(dir::AbstractString)
+    manifest_path = joinpath(dir, "manifest.toml")
+    if isfile(manifest_path)
+        manifest = parse_manifest(manifest_path)
+    else
+        manifest = infer_manifest(dir)
+    end
+    CaseBundle(basename(dir), abspath(dir), manifest, false)
+end
+
+function _load_remote_case(name::AbstractString)
+    # Download if not cached
+    if !is_case_cached(name)
+        download_remote_case(name)
+    end
+
+    dir = get_cached_case_dir(name)
+    manifest_path = joinpath(dir, "manifest.toml")
+    if isfile(manifest_path)
+        manifest = parse_manifest(manifest_path)
+    else
+        manifest = infer_manifest(dir)
+    end
+    CaseBundle(name, dir, manifest, true)
+end
+
+"""
+    get_file(cb::CaseBundle, format::Symbol;
+             format_version=nothing, variant=nothing, required=true) -> Union{String, Nothing}
+
+Get the path to a file by format.
+
+# Arguments
+- `cb`: Case bundle
+- `format`: Format symbol (e.g., :psse_raw, :psse_dyr, :matpower, :raw, :dyr)
+- `format_version`: Optional format version (e.g., "33" for PSS/E v33)
+- `variant`: Optional variant name (e.g., "genrou")
+- `required`: If true (default), error if not found; if false, return nothing
+
+# Examples
+```julia
+case = load_case("ieee14")
+get_file(case, :raw)                        # Default RAW file
+get_file(case, :dyr, variant="genrou")      # Specific variant
+get_file(case, :raw, format_version="34")   # Specific PSS/E version
+```
+"""
+function get_file(cb::CaseBundle, format::Symbol;
+                  format_version::Union{String, Nothing}=nothing,
+                  variant::Union{String, Nothing}=nothing,
+                  required::Bool=true)
+    # Normalize format aliases
+    actual_format = _normalize_format(format)
+
+    # Find matching file entry
+    entry = get_file_entry(cb.manifest, actual_format;
+                           format_version=format_version, variant=variant)
+
+    if entry === nothing && variant === nothing && format_version === nothing
+        # Try to find any file of this format (use default)
+        entry = get_default_file(cb.manifest, actual_format)
+    end
+
+    if entry === nothing
+        if required
+            available = list_formats(cb)
+            if variant !== nothing
+                variants = list_variants(cb, actual_format)
+                error("File not found for format :$format with variant '$variant' in case '$(cb.name)'. Available variants: $(join(variants, ", "))")
+            elseif format_version !== nothing
+                error("File not found for format :$format with version '$format_version' in case '$(cb.name)'. Available formats: $(join(available, ", "))")
+            else
+                error("File not found for format :$format in case '$(cb.name)'. Available formats: $(join(available, ", "))")
+            end
+        else
+            return nothing
+        end
+    end
+
+    joinpath(cb.dir, entry.path)
+end
+
+"""
+Normalize format aliases to canonical format symbols.
+"""
+function _normalize_format(format::Symbol)
+    if format === :raw
+        return :psse_raw
+    elseif format === :dyr
+        return :psse_dyr
+    else
+        return format
+    end
+end
+
+"""
+    list_formats(cb::CaseBundle) -> Vector{Symbol}
+
+List all formats available in a case bundle.
+"""
+function list_formats(cb::CaseBundle)
+    list_formats(cb.manifest)
+end
+
+"""
+    list_variants(cb::CaseBundle, format::Symbol) -> Vector{String}
+
+List all variants available for a format in a case bundle.
+"""
+function list_variants(cb::CaseBundle, format::Symbol)
+    actual_format = _normalize_format(format)
+    list_variants(cb.manifest, actual_format)
+end
+
+"""
+    list_files(cb::CaseBundle) -> Vector{NamedTuple}
+
+List all files in a case bundle with their metadata.
+"""
+function list_files(cb::CaseBundle)
+    [(path=f.path, format=f.format, format_version=f.format_version,
+      variant=f.variant, default=f.default) for f in cb.manifest.files]
+end
+
+# ============================================================================
+# Credits API
+# ============================================================================
+
+"""
+    get_credits(cb::CaseBundle) -> Union{Credits, Nothing}
+
+Get the credits/attribution information for a case bundle.
+Returns `nothing` if no credits are defined.
+"""
+function get_credits(cb::CaseBundle)
+    cb.manifest.credits
+end
+
+"""
+    has_credits(cb::CaseBundle) -> Bool
+
+Check if a case bundle has credits information.
+"""
+function has_credits(cb::CaseBundle)
+    cb.manifest.credits !== nothing
+end
+
+"""
+    get_license(cb::CaseBundle) -> Union{String, Nothing}
+
+Get the SPDX license identifier for a case bundle.
+Returns `nothing` if not specified.
+"""
+function get_license(cb::CaseBundle)
+    cb.manifest.credits === nothing ? nothing : cb.manifest.credits.license
+end
+
+"""
+    get_authors(cb::CaseBundle) -> Vector{String}
+
+Get the list of original data authors/creators.
+Returns an empty vector if not specified.
+"""
+function get_authors(cb::CaseBundle)
+    cb.manifest.credits === nothing ? String[] : cb.manifest.credits.authors
+end
+
+"""
+    get_maintainers(cb::CaseBundle) -> Vector{String}
+
+Get the list of PowerfulCases maintainers.
+Returns an empty vector if not specified.
+"""
+function get_maintainers(cb::CaseBundle)
+    cb.manifest.credits === nothing ? String[] : cb.manifest.credits.maintainers
+end
+
+"""
+    get_citations(cb::CaseBundle) -> Vector{Citation}
+
+Get the list of publications to cite when using this case.
+Returns an empty vector if not specified.
+"""
+function get_citations(cb::CaseBundle)
+    cb.manifest.credits === nothing ? Citation[] : cb.manifest.credits.citations
+end
+
+"""
+    list_cases() -> Vector{String}
+
+List all available case names (bundled + remote + cached).
+"""
+function list_cases()
+    cases = Set{String}()
+
+    # Bundled cases
+    if isdir(CASES_DIR)
+        for entry in readdir(CASES_DIR)
+            path = joinpath(CASES_DIR, entry)
+            if isdir(path) && !startswith(entry, ".")
+                push!(cases, entry)
+            end
+        end
+    end
+
+    # Remote cases from registry
+    for name in list_remote_cases()
+        push!(cases, name)
+    end
+
+    # Cached cases
+    for name in list_cached_cases()
+        push!(cases, name)
+    end
+
+    sort(collect(cases))
+end
+
+# ============================================================================
+# Legacy API (Deprecated) - Backward compatibility
+# ============================================================================
+
+"""
+    LegacyCaseBundle
+
+Wrapper for backward compatibility with old API.
+Wraps a CaseBundle but provides the old interface.
+"""
+struct LegacyCaseBundle
+    bundle::CaseBundle
+    _name::Symbol  # Keep Symbol for old API compatibility
+end
+
+function Base.getproperty(lcb::LegacyCaseBundle, prop::Symbol)
+    if prop === :bundle
+        return getfield(lcb, :bundle)
+    elseif prop === :_name
+        return getfield(lcb, :_name)
+    elseif prop === :name
+        return getfield(lcb, :_name)
+    elseif prop === :dir
+        return getfield(lcb, :bundle).dir
+    elseif prop === :raw
+        return get_file(getfield(lcb, :bundle), :psse_raw)
+    elseif prop === :dyr
+        return get_file(getfield(lcb, :bundle), :psse_dyr; required=false)
+    else
+        error("CaseBundle has no property $prop. Use .raw, .dyr, or get_dyr(case, variant)")
+    end
+end
+
+Base.propertynames(::LegacyCaseBundle) = (:name, :dir, :raw, :dyr)
+
+# Functor for legacy API: case("genrou")
+function (lcb::LegacyCaseBundle)(variant::String)
+    get_dyr(lcb, variant)
+end
+
+"""
+    get_dyr(cb::LegacyCaseBundle, variant::String) -> String
+
+[Legacy API] Get the path to a DYR variant file.
+"""
+function get_dyr(cb::LegacyCaseBundle, variant::String)
+    get_file(cb.bundle, :psse_dyr; variant=variant)
+end
+
+# Also support get_dyr on new CaseBundle for convenience
+function get_dyr(cb::CaseBundle, variant::String)
+    get_file(cb, :psse_dyr; variant=variant)
+end
+
+"""
+    list_dyr_variants(cb) -> Vector{String}
+
+[Legacy API] List available DYR variants for a case.
+"""
+function list_dyr_variants(cb::LegacyCaseBundle)
+    list_variants(cb.bundle, :psse_dyr)
+end
+
+function list_dyr_variants(cb::CaseBundle)
+    list_variants(cb, :psse_dyr)
+end
+
+# Legacy get_file that takes a filename string
+function get_file(cb::LegacyCaseBundle, filename::String)
+    path = joinpath(cb.dir, filename)
+    if !isfile(path)
+        error("File not found in $(cb.name) bundle: $filename")
+    end
+    return path
+end
+
+function list_files(cb::LegacyCaseBundle)
+    list_files(cb.bundle)
+end
+
+"""
+    path(filename::String) -> String
+
+[DEPRECATED] Direct file path access. Use load_case() instead.
+"""
+function path(filename::String)
+    Base.depwarn(
+        "PowerfulCases.path() is deprecated. Use load_case(\"casename\").raw instead.",
+        :path
+    )
+    # Support old flat structure for backwards compatibility
+    parts = split(filename, '/')
+    if length(parts) == 1
+        name = replace(filename, r"\.(raw|dyr)$" => "")
+        bundle_path = joinpath(CASES_DIR, name, filename)
+        if isfile(bundle_path)
+            return bundle_path
+        end
+    elseif length(parts) == 2 && parts[1] == "dyr"
+        dyr_file = parts[2]
+        name = replace(dyr_file, r"\.dyr$" => "")
+        base_name = split(name, "_")[1]
+        bundle_path = joinpath(CASES_DIR, base_name, dyr_file)
+        if isfile(bundle_path)
+            return bundle_path
+        end
+    end
+
+    full_path = joinpath(CASES_DIR, filename)
+    if isfile(full_path)
+        return full_path
+    end
+
+    error("Case file not found: $filename. Use load_case() to access cases.")
+end
+
+# ============================================================================
+# Auto-generate legacy case accessor functions (deprecated)
+# ============================================================================
+
+# Track if deprecation warning has been shown for each case
+const _DEPRECATION_WARNED = Set{Symbol}()
+
+function _create_legacy_case(name::Symbol)
+    name_str = string(name)
+    dir = joinpath(CASES_DIR, name_str)
+
+    # Show deprecation warning once per case
+    if !(name in _DEPRECATION_WARNED)
+        push!(_DEPRECATION_WARNED, name)
+        @warn """
+PowerfulCases.$name_str() is deprecated. Use load_case("$name_str") instead.
+
+Old API:
+  case = $name_str()
+  case.raw
+
+New API:
+  case = load_case("$name_str")
+  case.raw
+""" maxlog=1
+    end
+
+    manifest_path = joinpath(dir, "manifest.toml")
+    if isfile(manifest_path)
+        manifest = parse_manifest(manifest_path)
+    else
+        manifest = infer_manifest(dir)
+    end
+    bundle = CaseBundle(name_str, dir, manifest, false)
+    LegacyCaseBundle(bundle, name)
+end
+
+# Generate at runtime to pick up any new cases
+function __init__()
+    for name_str in list_cases()
+        name = Symbol(name_str)
+        dir = joinpath(CASES_DIR, name_str)
+        if isdir(dir) && !isdefined(@__MODULE__, name)
+            @eval $name() = _create_legacy_case($(QuoteNode(name)))
+        end
+    end
+end
+
+# Pre-generate for known cases at compile time
+for name in [:ieee14, :ieee39, :ieee118, :ACTIVSg2000, :ACTIVSg2000_singlegen,
+             :ACTIVSg10k, :ACTIVSg70k, :ACTIVSg70k_singlegen,
+             :case5, :case9, :npcc, :two_bus_branch, :two_bus_transformer,
+             :ieee14_fault, :ieee14_island, :ieee39_nopq31, :ieee39_rt]
+    name_str = string(name)
+    @eval begin
+        """
+            $($name_str)() -> LegacyCaseBundle
+
+        [DEPRECATED] Get the $($name_str) test case bundle.
+        Use `load_case("$($name_str)")` instead.
+        """
+        $name() = _create_legacy_case($(QuoteNode(name)))
+        export $name
+    end
+end
+
+# Export legacy API for backward compatibility
+export get_dyr, list_dyr_variants, path
+export LegacyCaseBundle
+
+end # module

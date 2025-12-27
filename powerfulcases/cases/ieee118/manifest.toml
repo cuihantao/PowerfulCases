@@ -1,0 +1,8 @@
+name = "ieee118"
+description = "IEEE 118-bus test system"
+
+[[files]]
+path = "ieee118.raw"
+format = "psse_raw"
+format_version = "33"
+default = true

@@ -1,0 +1,8 @@
+name = "ieee39_nopq31"
+description = "IEEE 39-bus test system without PQ load at bus 31"
+
+[[files]]
+path = "ieee39_nopq31.raw"
+format = "psse_raw"
+format_version = "33"
+default = true

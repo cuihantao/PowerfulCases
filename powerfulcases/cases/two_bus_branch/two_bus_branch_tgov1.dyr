@@ -1,0 +1,9 @@
+// Two-bus transformer case with TGOV1 governor
+// Test case for GENCLS + TGOV1 integration
+
+// GENCLS: BUS 'GENCLS' ID H D /
+      1 'GENCLS' 1     5.0000       0.0000    /
+
+// TGOV1: BUS 'TGOV1' ID R Dt Vmax Vmin T1 T2 T3 /
+// R=0.05 (5% droop), Dt=0, Vmax=1.2, Vmin=0, T1=0.5, T2=2.1, T3=7.0
+      1 'TGOV1'  1    0.05000      0.0000       1.2000      0.0000      0.5000      2.1000      7.0000    /

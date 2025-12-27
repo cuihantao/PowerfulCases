@@ -1,0 +1,8 @@
+name = "ieee14_island"
+description = "IEEE 14-bus test system with island configuration"
+
+[[files]]
+path = "ieee14_island.raw"
+format = "psse_raw"
+format_version = "33"
+default = true

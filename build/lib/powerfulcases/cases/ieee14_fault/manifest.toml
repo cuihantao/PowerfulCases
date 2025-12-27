@@ -1,0 +1,8 @@
+name = "ieee14_fault"
+description = "IEEE 14-bus test system configured for fault studies"
+
+[[files]]
+path = "ieee14_fault.raw"
+format = "psse_raw"
+format_version = "33"
+default = true

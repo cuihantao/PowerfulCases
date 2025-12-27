@@ -1,0 +1,50 @@
+name = "ieee14"
+description = "IEEE 14-bus test system"
+
+[credits]
+license = "CC0-1.0"
+authors = ["IEEE Power & Energy Society"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "IEEE 14-Bus Test System, Power Systems Test Case Archive, University of Washington"
+
+[[files]]
+path = "ieee14.raw"
+format = "psse_raw"
+format_version = "33"
+default = true
+
+[[files]]
+path = "ieee14.dyr"
+format = "psse_dyr"
+default = true
+
+[[files]]
+path = "ieee14_genrou.dyr"
+format = "psse_dyr"
+variant = "genrou"
+
+[[files]]
+path = "ieee14_genrou_highsat.dyr"
+format = "psse_dyr"
+variant = "genrou_highsat"
+
+[[files]]
+path = "ieee14_gensal.dyr"
+format = "psse_dyr"
+variant = "gensal"
+
+[[files]]
+path = "ieee14_gentpj1.dyr"
+format = "psse_dyr"
+variant = "gentpj1"
+
+[[files]]
+path = "ieee14_gentpj1_highsat.dyr"
+format = "psse_dyr"
+variant = "gentpj1_highsat"
+
+[[files]]
+path = "ieee14.xlsx"
+format = "xlsx"

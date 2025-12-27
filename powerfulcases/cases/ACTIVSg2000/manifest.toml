@@ -1,0 +1,19 @@
+name = "ACTIVSg2000"
+description = "ACTIVS 2000-bus synthetic case"
+
+[[files]]
+path = "ACTIVSg2000.raw"
+format = "psse_raw"
+format_version = "33"
+default = true
+
+[[files]]
+path = "ACTIVSg2000_fixed_zx.raw"
+format = "psse_raw"
+format_version = "33"
+variant = "fixed_zx"
+
+[[files]]
+path = "ACTIVSg2000.dyr"
+format = "psse_dyr"
+default = true

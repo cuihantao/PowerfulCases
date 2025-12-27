@@ -1,0 +1,13 @@
+name = "two_bus_transformer"
+description = "Two-bus system with transformer for testing"
+
+[[files]]
+path = "two_bus_transformer.raw"
+format = "psse_raw"
+format_version = "33"
+default = true
+
+[[files]]
+path = "two_bus_transformer.dyr"
+format = "psse_dyr"
+default = true

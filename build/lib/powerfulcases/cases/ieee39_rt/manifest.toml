@@ -1,0 +1,8 @@
+name = "ieee39_rt"
+description = "IEEE 39-bus test system for real-time simulation"
+
+[[files]]
+path = "ieee39_rt.raw"
+format = "psse_raw"
+format_version = "33"
+default = true

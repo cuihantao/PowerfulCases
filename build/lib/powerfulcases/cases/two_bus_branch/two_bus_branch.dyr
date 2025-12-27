@@ -1,0 +1,7 @@
+// Two-bus SMIB case - DYR file
+// Bus 1: Infinite bus (large inertia H=500)
+// Bus 2: Generator (normal inertia H=5)
+
+// Format: BUS 'MODEL' ID H D /
+      1 'GENCLS' 1   500.0000       0.0000    /
+      2 'GENCLS' 1     5.0000       0.0000    /

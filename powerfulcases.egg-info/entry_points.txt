@@ -1,0 +1,3 @@
+[console_scripts]
+pcase = powerfulcases.cli:main
+powerfulcases = powerfulcases.cli:main

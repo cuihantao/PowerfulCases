@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PowerfulCases Registry",
+  "description": "Schema for registry.toml - defines remote cases not bundled in Python wheels",
+  "type": "object",
+  "required": ["base_url", "remote_cases"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Registry format version",
+      "default": "1.0.0"
+    },
+    "base_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Base URL for raw file downloads (e.g., GitHub raw content URL)"
+    },
+    "remote_cases": {
+      "type": "array",
+      "description": "Case names that are remote (not bundled in wheels)",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

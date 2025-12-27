@@ -1,0 +1,8 @@
+name = "ACTIVSg10k"
+description = "ACTIVS 10,000-bus synthetic case"
+
+[[files]]
+path = "ACTIVSg10k.raw"
+format = "psse_raw"
+format_version = "33"
+default = true

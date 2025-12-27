@@ -1,0 +1,8 @@
+name = "case9"
+description = "9-bus test case"
+
+[[files]]
+path = "case9.raw"
+format = "psse_raw"
+format_version = "33"
+default = true
