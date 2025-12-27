@@ -67,25 +67,25 @@ using Downloads
 
     @testset "New API - list functions" begin
         # cases returns strings now
-        cases = cases()
-        @test "ieee14" in cases
-        @test "ieee39" in cases
-        @test length(cases) > 5
+        case_list = cases()
+        @test "ieee14" in case_list
+        @test "ieee39" in case_list
+        @test length(case_list) > 5
 
         # formats
         case = load("ieee14")
-        formats = formats(case)
-        @test :psse_raw in formats
-        @test :psse_dyr in formats
+        format_list = formats(case)
+        @test :psse_raw in format_list
+        @test :psse_dyr in format_list
 
         # variants
-        variants = variants(case, :dyr)
-        @test "genrou" in variants
-        @test "default" in variants
+        variant_list = variants(case, :dyr)
+        @test "genrou" in variant_list
+        @test "default" in variant_list
 
         # variants with alias
-        variants2 = variants(case, :psse_dyr)
-        @test variants == variants2
+        variant_list2 = variants(case, :psse_dyr)
+        @test variant_list == variant_list2
     end
 
     @testset "New API - list_files with metadata" begin
@@ -281,10 +281,10 @@ using Downloads
         @test endswith(cache_dir, ".powerfulcases")
 
         # Cache info
-        info = info()
-        @test haskey(info, :directory)
-        @test haskey(info, :num_cases)
-        @test haskey(info, :total_size_mb)
+        cache_info = info()
+        @test haskey(cache_info, :directory)
+        @test haskey(cache_info, :num_cases)
+        @test haskey(cache_info, :total_size_mb)
 
         # Check if case is cached (should be false for most cases)
         @test is_case_cached("nonexistent_case") == false
@@ -537,9 +537,9 @@ remote_cases = ["case1", "case2", "case3"]
             touch(joinpath(dir, "case.RAW"))
             touch(joinpath(dir, "case.DYR"))
             manifest = infer_manifest(dir)
-            formats = [f.format for f in manifest.files]
-            @test :psse_raw in formats
-            @test :psse_dyr in formats
+            format_list = [f.format for f in manifest.files]
+            @test :psse_raw in format_list
+            @test :psse_dyr in format_list
         end
 
         # Test subdirectories are ignored
@@ -566,16 +566,16 @@ remote_cases = ["case1", "case2", "case3"]
             FileEntry("c.dyr", :psse_dyr),
         ]
         manifest = Manifest("test"; files=files)
-        formats = formats(manifest)
-        @test length(formats) == 2
-        @test :psse_raw in formats
-        @test :psse_dyr in formats
+        format_list = formats(manifest)
+        @test length(format_list) == 2
+        @test :psse_raw in format_list
+        @test :psse_dyr in format_list
 
         # Test variants with no variants
         files = [FileEntry("a.raw", :psse_raw)]
         manifest = Manifest("test"; files=files)
-        variants = variants(manifest, :psse_raw)
-        @test isempty(variants)
+        variant_list = variants(manifest, :psse_raw)
+        @test isempty(variant_list)
 
         # Test variants with default
         files = [
@@ -583,9 +583,9 @@ remote_cases = ["case1", "case2", "case3"]
             FileEntry("genrou.dyr", :psse_dyr; variant="genrou"),
         ]
         manifest = Manifest("test"; files=files)
-        variants = variants(manifest, :psse_dyr)
-        @test "default" in variants
-        @test "genrou" in variants
+        variant_list = variants(manifest, :psse_dyr)
+        @test "default" in variant_list
+        @test "genrou" in variant_list
 
         # Test manifest with data_version
         mktempdir() do dir
