@@ -1,0 +1,2 @@
+include registry.toml
+include setup.py
