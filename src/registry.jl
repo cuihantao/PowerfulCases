@@ -128,14 +128,14 @@ function get_case_base_url(name::AbstractString)
 end
 
 """
-    download_remote_case(name::AbstractString; force::Bool=false) -> String
+    download(name::AbstractString; force::Bool=false) -> String
 
 Download a case from the remote registry.
 Downloads the manifest.toml first, then all files listed in the manifest.
 
 Returns the path to the downloaded case directory.
 """
-function download_remote_case(name::AbstractString; force::Bool=false)
+function download(name::AbstractString; force::Bool=false)
     registry = load_registry()
 
     if !(name in registry.remote_cases)

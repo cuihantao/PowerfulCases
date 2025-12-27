@@ -81,13 +81,13 @@ function download_file(url::AbstractString, dest::AbstractString; progress::Bool
 end
 
 """
-    clear_cache(name::Union{AbstractString, Nothing}=nothing)
+    clear(name::Union{AbstractString, Nothing}=nothing)
 
 Clear cached cases.
 If `name` is provided, only clear that specific case.
 If `name` is nothing, clear the entire cache.
 """
-function clear_cache(name::Union{AbstractString, Nothing}=nothing)
+function clear(name::Union{AbstractString, Nothing}=nothing)
     if name === nothing
         cache_dir = get_cache_dir()
         if isdir(cache_dir)
@@ -127,11 +127,11 @@ function list_cached_cases()
 end
 
 """
-    cache_info() -> NamedTuple
+    info() -> NamedTuple
 
 Get information about the cache.
 """
-function cache_info()
+function info()
     cache_dir = get_cache_dir()
     cases = list_cached_cases()
 

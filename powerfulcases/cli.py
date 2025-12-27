@@ -5,9 +5,9 @@ Command-line interface for PowerfulCases.
 import click
 from pathlib import Path
 
-from .manifest import create_manifest as _create_manifest
-from .cache import clear_cache as _clear_cache, cache_info as _cache_info
-from .registry import download_remote_case, list_remote_cases
+from .manifest import manifest as _manifest
+from .cache import clear as _clear, info as _info
+from .registry import download as _download, list_remote_cases
 
 
 @click.group()
@@ -23,13 +23,13 @@ def cli():
 
 @cli.command("create-manifest")
 @click.argument("path", type=click.Path(exists=True, file_okay=False, path_type=Path))
-def create_manifest(path: Path):
+def manifest(path: Path):
     """Generate manifest.toml for a case directory.
 
     PATH is the directory containing case files (.raw, .dyr, .m, etc.)
     """
     try:
-        manifest_path = _create_manifest(path)
+        manifest_path = _manifest(path)
         click.echo(f"Created manifest: {manifest_path}")
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
@@ -45,7 +45,7 @@ def download(name: str, force: bool):
     NAME is the case name (e.g., 'activsg70k')
     """
     try:
-        case_dir = download_remote_case(name, force=force)
+        case_dir = _download(name, force=force)
         click.echo(f"Downloaded to: {case_dir}")
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
@@ -55,9 +55,9 @@ def download(name: str, force: bool):
 @cli.command("list")
 @click.option("--remote", "-r", is_flag=True, help="Show only remote cases")
 @click.option("--cached", "-c", is_flag=True, help="Show only cached cases")
-def list_cases(remote: bool, cached: bool):
+def cases(remote: bool, cached: bool):
     """List available cases."""
-    from .cases import list_cases as _list_cases
+    from .cases import cases as _cases
     from .cache import list_cached_cases
 
     if remote:
@@ -67,7 +67,7 @@ def list_cases(remote: bool, cached: bool):
         cases = list_cached_cases()
         click.echo("Cached cases:")
     else:
-        cases = _list_cases()
+        cases = _cases()
         click.echo("Available cases:")
 
     for case in cases:
@@ -80,25 +80,25 @@ def list_cases(remote: bool, cached: bool):
 @cli.command("clear-cache")
 @click.argument("name", required=False)
 @click.option("--all", "-a", "clear_all", is_flag=True, help="Clear entire cache")
-def clear_cache(name: str, clear_all: bool):
+def clear(name: str, clear_all: bool):
     """Clear cached cases.
 
     NAME is the case name to clear. Use --all to clear everything.
     """
     if clear_all:
         if click.confirm("This will delete the entire cache. Continue?"):
-            _clear_cache(None)
+            _clear(None)
     elif name:
-        _clear_cache(name)
+        _clear(name)
     else:
         click.echo("Specify a case name or use --all to clear everything.")
         raise SystemExit(1)
 
 
 @cli.command("cache-info")
-def cache_info_cmd():
+def info_cmd():
     """Show cache information."""
-    info = _cache_info()
+    info = _info()
 
     click.echo(f"Cache directory: {info.directory}")
     click.echo(f"Exists: {info.exists}")
@@ -118,10 +118,10 @@ def case_info(name: str):
 
     NAME is the case name (e.g., 'ieee14')
     """
-    from .cases import load_case
+    from .cases import load
 
     try:
-        case = load_case(name)
+        case = load(name)
         click.echo(f"Case: {case.name}")
         click.echo(f"Directory: {case.dir}")
         click.echo(f"Remote: {case.is_remote}")

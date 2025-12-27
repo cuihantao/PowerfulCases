@@ -9,25 +9,25 @@ with a bundle-based API for easy access.
 using PowerfulCases
 
 # Load a case (built-in, remote, or local directory)
-case = load_case("ieee14")
-case = load_case("/path/to/my/project")
+case = load("ieee14")
+case = load("/path/to/my/project")
 
 # Access files by format
 case.raw                                    # Default RAW file
 case.dyr                                    # Default DYR file
-get_file(case, :raw)                        # Same as case.raw
-get_file(case, :raw, format_version="34")   # Specific PSS/E version
-get_file(case, :dyr, variant="genrou")      # Specific variant
+file(case, :raw)                        # Same as case.raw
+file(case, :raw, format_version="34")   # Specific PSS/E version
+file(case, :dyr, variant="genrou")      # Specific variant
 
 # Discovery
-list_cases()                    # All available cases
+cases()                    # All available cases
 list_files(case)                # Files with format info
-list_formats(case)              # Available formats
-list_variants(case, :dyr)       # Variants for a format
+formats(case)              # Available formats
+variants(case, :dyr)       # Variants for a format
 
 # Cache management (for remote cases)
-download_case("activsg70k")     # Pre-download large case
-clear_cache("activsg70k")       # Remove from cache
+download("activsg70k")     # Pre-download large case
+clear("activsg70k")       # Remove from cache
 ```
 
 # Legacy API (Deprecated)
@@ -47,30 +47,12 @@ include("cache.jl")
 include("registry.jl")
 
 # Re-export key functions from submodules
-export load_case, get_file, list_cases, list_files, list_formats, list_variants
-export create_manifest
-export download_case, clear_cache, set_cache_dir, cache_info
+export load, file, cases, list_files, formats, variants
+export manifest
+export download, clear, set_cache_dir, info
 export CaseBundle, Manifest, FileEntry, Credits, Citation
 export get_credits, get_license, get_authors, get_maintainers, get_citations, has_credits
 
-# Public alias for download_case (maps to download_remote_case)
-"""
-    download_case(name::AbstractString; force::Bool=false) -> String
-
-Download a remote case to the local cache.
-Use this to pre-download large cases for offline use.
-
-# Arguments
-- `name`: Case name to download
-- `force`: If true, re-download even if already cached
-
-# Example
-```julia
-download_case("ACTIVSg70k")  # Pre-download large case
-case = load_case("ACTIVSg70k")  # Now loads from cache
-```
-"""
-const download_case = download_remote_case
 
 const CASES_DIR = joinpath(@__DIR__, "..", "powerfulcases", "cases")
 
@@ -97,29 +79,29 @@ function Base.getproperty(cb::CaseBundle, prop::Symbol)
     if prop in (:name, :dir, :manifest, :is_remote)
         return getfield(cb, prop)
     elseif prop === :raw
-        return get_file(cb, :psse_raw)
+        return file(cb, :psse_raw)
     elseif prop === :dyr
-        path = get_file(cb, :psse_dyr; required=false)
+        path = file(cb, :psse_dyr; required=false)
         return path
     elseif prop === :matpower
-        return get_file(cb, :matpower)
+        return file(cb, :matpower)
     elseif prop === :psat
-        return get_file(cb, :psat)
+        return file(cb, :psat)
     else
         # Try as a format symbol
         try
-            return get_file(cb, prop)
+            return file(cb, prop)
         catch e
             # Include original exception for debugging context
-            error("CaseBundle has no property :$prop. Available formats: $(list_formats(cb)). Original error: $e")
+            error("CaseBundle has no property :$prop. Available formats: $(formats(cb)). Original error: $e")
         end
     end
 end
 
-Base.propertynames(cb::CaseBundle) = (:name, :dir, :manifest, :is_remote, :raw, :dyr, list_formats(cb)...)
+Base.propertynames(cb::CaseBundle) = (:name, :dir, :manifest, :is_remote, :raw, :dyr, formats(cb)...)
 
 """
-    load_case(name_or_path::AbstractString) -> CaseBundle
+    load(name_or_path::AbstractString) -> CaseBundle
 
 Load a case bundle by name or path.
 
@@ -129,13 +111,13 @@ Load a case bundle by name or path.
 # Examples
 ```julia
 # Built-in case
-case = load_case("ieee14")
+case = load("ieee14")
 
 # Local directory
-case = load_case("/path/to/my/project")
+case = load("/path/to/my/project")
 ```
 """
-function load_case(name_or_path::AbstractString)
+function load(name_or_path::AbstractString)
     # Check if it's a path (contains / or \\ or is absolute)
     if isdir(name_or_path)
         return _load_local_case(name_or_path)
@@ -153,7 +135,7 @@ function load_case(name_or_path::AbstractString)
     end
 
     # Not found
-    available = list_cases()
+    available = cases()
     error("Unknown case: '$name_or_path'. Available cases: $(join(available, ", "))")
 end
 
@@ -180,7 +162,7 @@ end
 function _load_remote_case(name::AbstractString)
     # Download if not cached
     if !is_case_cached(name)
-        download_remote_case(name)
+        download(name)
     end
 
     dir = get_cached_case_dir(name)
@@ -194,7 +176,7 @@ function _load_remote_case(name::AbstractString)
 end
 
 """
-    get_file(cb::CaseBundle, format::Symbol;
+    file(cb::CaseBundle, format::Symbol;
              format_version=nothing, variant=nothing, required=true) -> Union{String, Nothing}
 
 Get the path to a file by format.
@@ -208,13 +190,13 @@ Get the path to a file by format.
 
 # Examples
 ```julia
-case = load_case("ieee14")
-get_file(case, :raw)                        # Default RAW file
-get_file(case, :dyr, variant="genrou")      # Specific variant
-get_file(case, :raw, format_version="34")   # Specific PSS/E version
+case = load("ieee14")
+file(case, :raw)                        # Default RAW file
+file(case, :dyr, variant="genrou")      # Specific variant
+file(case, :raw, format_version="34")   # Specific PSS/E version
 ```
 """
-function get_file(cb::CaseBundle, format::Symbol;
+function file(cb::CaseBundle, format::Symbol;
                   format_version::Union{String, Nothing}=nothing,
                   variant::Union{String, Nothing}=nothing,
                   required::Bool=true)
@@ -222,7 +204,7 @@ function get_file(cb::CaseBundle, format::Symbol;
     actual_format = _normalize_format(format)
 
     # Find matching file entry
-    entry = get_file_entry(cb.manifest, actual_format;
+    entry = file_entry(cb.manifest, actual_format;
                            format_version=format_version, variant=variant)
 
     if entry === nothing && variant === nothing && format_version === nothing
@@ -232,10 +214,10 @@ function get_file(cb::CaseBundle, format::Symbol;
 
     if entry === nothing
         if required
-            available = list_formats(cb)
+            available = formats(cb)
             if variant !== nothing
-                variants = list_variants(cb, actual_format)
-                error("File not found for format :$format with variant '$variant' in case '$(cb.name)'. Available variants: $(join(variants, ", "))")
+                avail_variants = variants(cb, actual_format)
+                error("File not found for format :$format with variant '$variant' in case '$(cb.name)'. Available variants: $(join(avail_variants, ", "))")
             elseif format_version !== nothing
                 error("File not found for format :$format with version '$format_version' in case '$(cb.name)'. Available formats: $(join(available, ", "))")
             else
@@ -263,22 +245,22 @@ function _normalize_format(format::Symbol)
 end
 
 """
-    list_formats(cb::CaseBundle) -> Vector{Symbol}
+    formats(cb::CaseBundle) -> Vector{Symbol}
 
 List all formats available in a case bundle.
 """
-function list_formats(cb::CaseBundle)
-    list_formats(cb.manifest)
+function formats(cb::CaseBundle)
+    formats(cb.manifest)
 end
 
 """
-    list_variants(cb::CaseBundle, format::Symbol) -> Vector{String}
+    variants(cb::CaseBundle, format::Symbol) -> Vector{String}
 
 List all variants available for a format in a case bundle.
 """
-function list_variants(cb::CaseBundle, format::Symbol)
+function variants(cb::CaseBundle, format::Symbol)
     actual_format = _normalize_format(format)
-    list_variants(cb.manifest, actual_format)
+    variants(cb.manifest, actual_format)
 end
 
 """
@@ -355,34 +337,34 @@ function get_citations(cb::CaseBundle)
 end
 
 """
-    list_cases() -> Vector{String}
+    cases() -> Vector{String}
 
 List all available case names (bundled + remote + cached).
 """
-function list_cases()
-    cases = Set{String}()
+function cases()
+    result = Set{String}()
 
     # Bundled cases
     if isdir(CASES_DIR)
         for entry in readdir(CASES_DIR)
             path = joinpath(CASES_DIR, entry)
             if isdir(path) && !startswith(entry, ".")
-                push!(cases, entry)
+                push!(result, entry)
             end
         end
     end
 
     # Remote cases from registry
     for name in list_remote_cases()
-        push!(cases, name)
+        push!(result, name)
     end
 
     # Cached cases
     for name in list_cached_cases()
-        push!(cases, name)
+        push!(result, name)
     end
 
-    sort(collect(cases))
+    sort(collect(result))
 end
 
 # ============================================================================
@@ -410,9 +392,9 @@ function Base.getproperty(lcb::LegacyCaseBundle, prop::Symbol)
     elseif prop === :dir
         return getfield(lcb, :bundle).dir
     elseif prop === :raw
-        return get_file(getfield(lcb, :bundle), :psse_raw)
+        return file(getfield(lcb, :bundle), :psse_raw)
     elseif prop === :dyr
-        return get_file(getfield(lcb, :bundle), :psse_dyr; required=false)
+        return file(getfield(lcb, :bundle), :psse_dyr; required=false)
     else
         error("CaseBundle has no property $prop. Use .raw, .dyr, or get_dyr(case, variant)")
     end
@@ -431,12 +413,12 @@ end
 [Legacy API] Get the path to a DYR variant file.
 """
 function get_dyr(cb::LegacyCaseBundle, variant::String)
-    get_file(cb.bundle, :psse_dyr; variant=variant)
+    file(cb.bundle, :psse_dyr; variant=variant)
 end
 
 # Also support get_dyr on new CaseBundle for convenience
 function get_dyr(cb::CaseBundle, variant::String)
-    get_file(cb, :psse_dyr; variant=variant)
+    file(cb, :psse_dyr; variant=variant)
 end
 
 """
@@ -445,15 +427,15 @@ end
 [Legacy API] List available DYR variants for a case.
 """
 function list_dyr_variants(cb::LegacyCaseBundle)
-    list_variants(cb.bundle, :psse_dyr)
+    variants(cb.bundle, :psse_dyr)
 end
 
 function list_dyr_variants(cb::CaseBundle)
-    list_variants(cb, :psse_dyr)
+    variants(cb, :psse_dyr)
 end
 
-# Legacy get_file that takes a filename string
-function get_file(cb::LegacyCaseBundle, filename::String)
+# Legacy file that takes a filename string
+function file(cb::LegacyCaseBundle, filename::String)
     path = joinpath(cb.dir, filename)
     if !isfile(path)
         error("File not found in $(cb.name) bundle: $filename")
@@ -468,11 +450,11 @@ end
 """
     path(filename::String) -> String
 
-[DEPRECATED] Direct file path access. Use load_case() instead.
+[DEPRECATED] Direct file path access. Use load() instead.
 """
 function path(filename::String)
     Base.depwarn(
-        "PowerfulCases.path() is deprecated. Use load_case(\"casename\").raw instead.",
+        "PowerfulCases.path() is deprecated. Use load(\"casename\").raw instead.",
         :path
     )
     # Support old flat structure for backwards compatibility
@@ -498,7 +480,7 @@ function path(filename::String)
         return full_path
     end
 
-    error("Case file not found: $filename. Use load_case() to access cases.")
+    error("Case file not found: $filename. Use load() to access cases.")
 end
 
 # ============================================================================
@@ -516,14 +498,14 @@ function _create_legacy_case(name::Symbol)
     if !(name in _DEPRECATION_WARNED)
         push!(_DEPRECATION_WARNED, name)
         @warn """
-PowerfulCases.$name_str() is deprecated. Use load_case("$name_str") instead.
+PowerfulCases.$name_str() is deprecated. Use load("$name_str") instead.
 
 Old API:
   case = $name_str()
   case.raw
 
 New API:
-  case = load_case("$name_str")
+  case = load("$name_str")
   case.raw
 """ maxlog=1
     end
@@ -540,7 +522,7 @@ end
 
 # Generate at runtime to pick up any new cases
 function __init__()
-    for name_str in list_cases()
+    for name_str in cases()
         name = Symbol(name_str)
         dir = joinpath(CASES_DIR, name_str)
         if isdir(dir) && !isdefined(@__MODULE__, name)
@@ -560,7 +542,7 @@ for name in [:ieee14, :ieee39, :ieee118, :ACTIVSg2000, :ACTIVSg2000_singlegen,
             $($name_str)() -> LegacyCaseBundle
 
         [DEPRECATED] Get the $($name_str) test case bundle.
-        Use `load_case("$($name_str)")` instead.
+        Use `load("$($name_str)")` instead.
         """
         $name() = _create_legacy_case($(QuoteNode(name)))
         export $name

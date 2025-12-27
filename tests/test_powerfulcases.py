@@ -9,26 +9,26 @@ import zipfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from powerfulcases import (
-    load_case,
-    get_file,
-    list_cases,
-    list_formats,
-    list_variants,
+    load,
+    file,
+    cases,
+    formats,
+    variants,
     CaseBundle,
-    create_manifest,
+    manifest,
     get_cache_dir,
-    cache_info,
+    info,
     # Legacy API
     ieee14,
 )
 
 
 class TestNewAPI:
-    """Tests for the new load_case() API."""
+    """Tests for the new load() API."""
 
-    def test_load_case_bundled(self):
+    def test_load_bundled(self):
         """Test loading a bundled case by name."""
-        case = load_case("ieee14")
+        case = load("ieee14")
         assert case.name == "ieee14"
         assert os.path.isfile(case.raw)
         assert case.raw.endswith("ieee14.raw")
@@ -36,122 +36,122 @@ class TestNewAPI:
         assert os.path.isfile(case.dyr)
         assert case.is_remote is False
 
-    def test_load_case_local_directory(self):
+    def test_load_local_directory(self):
         """Test loading a case from a local directory."""
         cases_dir = os.path.join(
             os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee14"
         )
-        case = load_case(cases_dir)
+        case = load(cases_dir)
         assert case.name == "ieee14"
         assert os.path.isfile(case.raw)
 
-    def test_load_case_unknown(self):
+    def test_load_unknown(self):
         """Test error when loading unknown case."""
         try:
-            load_case("nonexistent_case")
+            load("nonexistent_case")
             assert False, "Should have raised ValueError"
         except ValueError as e:
             assert "Unknown case" in str(e)
 
-    def test_load_case_multiple(self):
+    def test_load_multiple(self):
         """Test loading multiple different cases."""
         for name in ["ieee14", "ieee39", "case5", "npcc"]:
-            case = load_case(name)
+            case = load(name)
             assert case.name == name
             assert os.path.isfile(case.raw)
 
 
 class TestGetFile:
-    """Tests for get_file() function."""
+    """Tests for file() function."""
 
-    def test_get_file_default(self):
+    def test_file_default(self):
         """Test getting default file for a format."""
-        case = load_case("ieee14")
-        raw_path = get_file(case, "psse_raw")
+        case = load("ieee14")
+        raw_path = file(case, "psse_raw")
         assert os.path.isfile(raw_path)
         assert raw_path.endswith(".raw")
 
-    def test_get_file_with_alias(self):
+    def test_file_with_alias(self):
         """Test format aliases (raw -> psse_raw)."""
-        case = load_case("ieee14")
-        raw_path = get_file(case, "raw")
+        case = load("ieee14")
+        raw_path = file(case, "raw")
         assert os.path.isfile(raw_path)
 
         # Both should return same path
-        raw_path2 = get_file(case, "psse_raw")
+        raw_path2 = file(case, "psse_raw")
         assert raw_path == raw_path2
 
-    def test_get_file_with_variant(self):
+    def test_file_with_variant(self):
         """Test getting a specific variant."""
-        case = load_case("ieee14")
-        genrou_path = get_file(case, "psse_dyr", variant="genrou")
+        case = load("ieee14")
+        genrou_path = file(case, "psse_dyr", variant="genrou")
         assert os.path.isfile(genrou_path)
         assert "genrou" in genrou_path
 
-    def test_get_file_with_default_variant(self):
+    def test_file_with_default_variant(self):
         """Test getting file with 'default' variant."""
-        case = load_case("ieee14")
-        default_path = get_file(case, "psse_dyr", variant="default")
+        case = load("ieee14")
+        default_path = file(case, "psse_dyr", variant="default")
         assert os.path.isfile(default_path)
 
         # Should be same as case.dyr
         assert default_path == case.dyr
 
-    def test_get_file_not_required(self):
+    def test_file_not_required(self):
         """Test required=False returns None for missing format."""
-        case = load_case("ieee14")
-        result = get_file(case, "matpower", required=False)
+        case = load("ieee14")
+        result = file(case, "matpower", required=False)
         assert result is None
 
-    def test_get_file_missing_required(self):
+    def test_file_missing_required(self):
         """Test error when required file is missing."""
-        case = load_case("ieee14")
+        case = load("ieee14")
         try:
-            get_file(case, "matpower")
+            file(case, "matpower")
             assert False, "Should have raised FileNotFoundError"
         except FileNotFoundError as e:
             assert "matpower" in str(e)
 
-    def test_get_file_missing_variant(self):
+    def test_file_missing_variant(self):
         """Test error when variant doesn't exist."""
-        case = load_case("ieee14")
+        case = load("ieee14")
         try:
-            get_file(case, "psse_dyr", variant="nonexistent_variant")
+            file(case, "psse_dyr", variant="nonexistent_variant")
             assert False, "Should have raised FileNotFoundError"
         except FileNotFoundError as e:
             assert "nonexistent_variant" in str(e)
 
 
 class TestListFunctions:
-    """Tests for list_cases(), list_formats(), list_variants()."""
+    """Tests for cases(), formats(), variants()."""
 
-    def test_list_cases(self):
+    def test_cases(self):
         """Test listing available cases."""
-        cases = list_cases()
-        assert "ieee14" in cases
-        assert "ieee39" in cases
-        assert len(cases) > 5
+        result = cases()
+        assert "ieee14" in result
+        assert "ieee39" in result
+        assert len(result) > 5
 
-    def test_list_formats(self):
+    def test_formats(self):
         """Test listing formats in a case."""
-        case = load_case("ieee14")
-        formats = list_formats(case)
-        assert "psse_raw" in formats
-        assert "psse_dyr" in formats
+        case = load("ieee14")
+        result = formats(case)
+        assert "psse_raw" in result
+        assert "psse_dyr" in result
 
-    def test_list_variants(self):
+    def test_variants(self):
         """Test listing variants for a format."""
-        case = load_case("ieee14")
-        variants = list_variants(case, "psse_dyr")
-        assert isinstance(variants, list)
-        assert "genrou" in variants
-        assert "default" in variants
+        case = load("ieee14")
+        result = variants(case, "psse_dyr")
+        assert isinstance(result, list)
+        assert "genrou" in result
+        assert "default" in result
 
-    def test_list_variants_with_alias(self):
-        """Test list_variants with format alias."""
-        case = load_case("ieee14")
-        variants = list_variants(case, "dyr")
-        assert "genrou" in variants
+    def test_variants_with_alias(self):
+        """Test variants with format alias."""
+        case = load("ieee14")
+        result = variants(case, "dyr")
+        assert "genrou" in result
 
 
 class TestCaseBundleMethods:
@@ -159,7 +159,7 @@ class TestCaseBundleMethods:
 
     def test_list_files(self):
         """Test list_files() returns metadata."""
-        case = load_case("ieee14")
+        case = load("ieee14")
         files = case.list_files()
         assert len(files) > 0
 
@@ -173,27 +173,27 @@ class TestCaseBundleMethods:
 
     def test_get_dyr_method(self):
         """Test legacy get_dyr() method on CaseBundle."""
-        case = load_case("ieee14")
+        case = load("ieee14")
         path = case.get_dyr("genrou")
         assert os.path.isfile(path)
 
     def test_list_dyr_variants_method(self):
         """Test legacy list_dyr_variants() method."""
-        case = load_case("ieee14")
+        case = load("ieee14")
         variants = case.list_dyr_variants()
         assert isinstance(variants, list)
         assert "genrou" in variants
 
     def test_functor_syntax(self):
         """Test case('variant') syntax."""
-        case = load_case("ieee14")
+        case = load("ieee14")
         path = case("genrou")
         assert os.path.isfile(path)
         assert "genrou" in path
 
     def test_repr(self):
         """Test string representation."""
-        case = load_case("ieee14")
+        case = load("ieee14")
         repr_str = repr(case)
         assert "ieee14" in repr_str
 
@@ -201,25 +201,25 @@ class TestCaseBundleMethods:
 class TestManifest:
     """Tests for manifest functionality."""
 
-    def test_create_manifest(self):
-        """Test create_manifest() helper."""
+    def test_manifest(self):
+        """Test manifest() helper."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create test files
             open(os.path.join(tmpdir, "test.raw"), "w").close()
             open(os.path.join(tmpdir, "test.dyr"), "w").close()
 
-            manifest_path = create_manifest(tmpdir)
+            manifest_path = manifest(tmpdir)
             assert os.path.isfile(manifest_path)
             assert str(manifest_path).endswith("manifest.toml")
 
-    def test_create_manifest_with_ambiguous(self):
-        """Test create_manifest with ambiguous .m file."""
+    def test_manifest_with_ambiguous(self):
+        """Test manifest with ambiguous .m file."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create ambiguous .m file
             open(os.path.join(tmpdir, "case.m"), "w").close()
 
             # Should create manifest with placeholder format
-            manifest_path = create_manifest(tmpdir)
+            manifest_path = manifest(tmpdir)
             assert os.path.isfile(manifest_path)
 
             # Check placeholder is in the manifest
@@ -295,9 +295,9 @@ class TestManifest:
             assert parsed.description == "Test"
             assert len(parsed.files) == 2
 
-    def test_get_file_entry(self):
-        """Test get_file_entry function."""
-        from powerfulcases.manifest import get_file_entry, get_default_file, Manifest, FileEntry
+    def test_file_entry(self):
+        """Test file_entry function."""
+        from powerfulcases.manifest import file_entry, get_default_file, Manifest, FileEntry
 
         files = [
             FileEntry(path="v33.raw", format="psse_raw", format_version="33", default=True),
@@ -308,17 +308,17 @@ class TestManifest:
         manifest = Manifest(name="test", files=files)
 
         # Get by format only
-        entry = get_file_entry(manifest, "psse_raw")
+        entry = file_entry(manifest, "psse_raw")
         assert entry is not None
         assert entry.path == "v33.raw"
 
         # Get by format_version
-        entry = get_file_entry(manifest, "psse_raw", format_version="34")
+        entry = file_entry(manifest, "psse_raw", format_version="34")
         assert entry is not None
         assert entry.path == "v34.raw"
 
         # Get by variant
-        entry = get_file_entry(manifest, "psse_dyr", variant="genrou")
+        entry = file_entry(manifest, "psse_dyr", variant="genrou")
         assert entry is not None
         assert entry.path == "genrou.dyr"
 
@@ -328,7 +328,7 @@ class TestManifest:
         assert entry.default is True
 
         # Missing format returns None
-        entry = get_file_entry(manifest, "matpower")
+        entry = file_entry(manifest, "matpower")
         assert entry is None
 
 
@@ -340,12 +340,12 @@ class TestCache:
         cache_dir = get_cache_dir()
         assert str(cache_dir).endswith(".powerfulcases")
 
-    def test_cache_info(self):
+    def test_info(self):
         """Test cache info."""
-        info = cache_info()
-        assert hasattr(info, "directory")
-        assert hasattr(info, "num_cases")
-        assert hasattr(info, "total_size_mb")
+        result = info()
+        assert hasattr(result, "directory")
+        assert hasattr(result, "num_cases")
+        assert hasattr(result, "total_size_mb")
 
     def test_is_case_cached(self):
         """Test checking if case is cached."""
@@ -443,7 +443,7 @@ class TestLegacyAPI:
 class TestCLI:
     """Tests for the command-line interface."""
 
-    def test_cli_create_manifest(self):
+    def test_cli_manifest(self):
         """Test create-manifest CLI command."""
         from click.testing import CliRunner
         from powerfulcases.cli import cli
@@ -457,7 +457,7 @@ class TestCLI:
             assert result.exit_code == 0
             assert "Created manifest" in result.output
 
-    def test_cli_create_manifest_nonexistent(self):
+    def test_cli_manifest_nonexistent(self):
         """Test create-manifest with nonexistent path."""
         from click.testing import CliRunner
         from powerfulcases.cli import cli
@@ -497,7 +497,7 @@ class TestCLI:
         assert result.exit_code == 0
         assert "Cached cases" in result.output
 
-    def test_cli_cache_info(self):
+    def test_cli_info(self):
         """Test cache-info CLI command."""
         from click.testing import CliRunner
         from powerfulcases.cli import cli
@@ -529,7 +529,7 @@ class TestCLI:
         assert result.exit_code != 0
         assert "Error" in result.output
 
-    def test_cli_clear_cache_no_args(self):
+    def test_cli_clear_no_args(self):
         """Test clear-cache without arguments shows help."""
         from click.testing import CliRunner
         from powerfulcases.cli import cli
@@ -539,7 +539,7 @@ class TestCLI:
         assert result.exit_code != 0
         assert "Specify a case name" in result.output
 
-    def test_cli_clear_cache_specific(self):
+    def test_cli_clear_specific(self):
         """Test clear-cache for specific case."""
         from click.testing import CliRunner
         from powerfulcases.cli import cli
@@ -559,7 +559,7 @@ class TestCLI:
         assert result.exit_code != 0
         assert "Error" in result.output
 
-    def test_cli_clear_cache_all_confirmed(self):
+    def test_cli_clear_all_confirmed(self):
         """Test clear-cache --all with confirmation."""
         from click.testing import CliRunner
         from powerfulcases.cli import cli
@@ -587,7 +587,7 @@ class TestCLI:
         finally:
             set_cache_dir(original)
 
-    def test_cli_clear_cache_all_cancelled(self):
+    def test_cli_clear_all_cancelled(self):
         """Test clear-cache --all cancelled by user."""
         from click.testing import CliRunner
         from powerfulcases.cli import cli
@@ -619,19 +619,19 @@ class TestCLI:
 class TestDownloadErrorHandling:
     """Tests for download error handling."""
 
-    def test_download_remote_case_unknown(self):
-        """Test download_remote_case with unknown case."""
-        from powerfulcases.registry import download_remote_case
+    def test_download_unknown(self):
+        """Test download with unknown case."""
+        from powerfulcases.registry import download
 
         try:
-            download_remote_case("nonexistent_xyz")
+            download("nonexistent_xyz")
             assert False, "Should have raised ValueError"
         except ValueError as e:
             assert "Unknown remote case" in str(e)
 
-    def test_download_remote_case_already_cached(self):
-        """Test download_remote_case returns early for cached case."""
-        from powerfulcases.registry import download_remote_case, load_registry
+    def test_download_already_cached(self):
+        """Test download returns early for cached case."""
+        from powerfulcases.registry import download, load_registry
         from powerfulcases.cache import set_cache_dir, get_cache_dir
         from pathlib import Path
 
@@ -654,17 +654,17 @@ class TestDownloadErrorHandling:
                 (test_case / "manifest.toml").write_text(f"name = '{case_name}'")
 
                 # Should return early without trying to download
-                result = download_remote_case(case_name, force=False)
+                result = download(case_name, force=False)
                 assert result == test_case
         finally:
             set_cache_dir(original)
 
-    def test_download_remote_case_success(self):
+    def test_download_success(self):
         """Test successful download of remote case from GitHub.
 
         Verifies the remote download works correctly with the cuihantao/PowerfulCases repo.
         """
-        from powerfulcases.registry import download_remote_case, load_registry
+        from powerfulcases.registry import download, load_registry
         from powerfulcases.cache import set_cache_dir, get_cache_dir
         from powerfulcases.manifest import parse_manifest
         from pathlib import Path
@@ -683,7 +683,7 @@ class TestDownloadErrorHandling:
 
                 # Download a known remote case
                 case_name = registry.remote_cases[0]
-                result = download_remote_case(case_name, force=True)
+                result = download(case_name, force=True)
                 case_dir = cache_dir / case_name
 
                 # Verify download succeeded
@@ -756,9 +756,9 @@ class TestCacheAdvanced:
         # Real download tests would need a mock server
         assert callable(download_file)
 
-    def test_clear_cache_specific(self):
+    def test_clear_specific(self):
         """Test clearing a specific cached case."""
-        from powerfulcases.cache import clear_cache, get_cache_dir, set_cache_dir
+        from powerfulcases.cache import clear, get_cache_dir, set_cache_dir
         from pathlib import Path
 
         original = get_cache_dir()
@@ -773,14 +773,14 @@ class TestCacheAdvanced:
             (test_case / "manifest.toml").write_text("name = 'test_case'")
 
             assert test_case.is_dir()
-            clear_cache("test_case")
+            clear("test_case")
             assert not test_case.is_dir()
 
         set_cache_dir(original)
 
-    def test_clear_cache_all(self):
+    def test_clear_all(self):
         """Test clearing entire cache."""
-        from powerfulcases.cache import clear_cache, get_cache_dir, set_cache_dir
+        from powerfulcases.cache import clear, get_cache_dir, set_cache_dir
         from pathlib import Path
 
         original = get_cache_dir()
@@ -794,7 +794,7 @@ class TestCacheAdvanced:
             (cache_dir / "case2").mkdir(parents=True)
 
             assert cache_dir.is_dir()
-            clear_cache(None)
+            clear(None)
             assert not cache_dir.is_dir()
 
         set_cache_dir(original)
@@ -986,46 +986,46 @@ class TestEdgeCases:
             assert len(manifest.files) == 1
             assert manifest.files[0].format == "psse_raw"
 
-    def test_list_formats_returns_all_formats(self):
-        """Test list_formats returns unique formats."""
-        from powerfulcases.manifest import list_formats, Manifest, FileEntry
+    def test_formats_returns_all_formats(self):
+        """Test formats returns unique formats."""
+        from powerfulcases.manifest import formats as manifest_formats, Manifest, FileEntry
 
         files = [
             FileEntry(path="a.raw", format="psse_raw"),
             FileEntry(path="b.raw", format="psse_raw"),
             FileEntry(path="c.dyr", format="psse_dyr"),
         ]
-        manifest = Manifest(name="test", files=files)
+        test_manifest = Manifest(name="test", files=files)
 
-        formats = list_formats(manifest)
-        assert len(formats) == 2
-        assert "psse_raw" in formats
-        assert "psse_dyr" in formats
+        result = manifest_formats(test_manifest)
+        assert len(result) == 2
+        assert "psse_raw" in result
+        assert "psse_dyr" in result
 
-    def test_list_variants_empty(self):
-        """Test list_variants with no variants."""
-        from powerfulcases.manifest import list_variants, Manifest, FileEntry
+    def test_variants_empty(self):
+        """Test variants with no variants."""
+        from powerfulcases.manifest import variants as manifest_variants, Manifest, FileEntry
 
         files = [FileEntry(path="a.raw", format="psse_raw")]
-        manifest = Manifest(name="test", files=files)
+        test_manifest = Manifest(name="test", files=files)
 
-        variants = list_variants(manifest, "psse_raw")
+        result = manifest_variants(test_manifest, "psse_raw")
         # No variants defined
-        assert len(variants) == 0
+        assert len(result) == 0
 
-    def test_list_variants_with_default(self):
-        """Test list_variants includes 'default' for default files."""
-        from powerfulcases.manifest import list_variants, Manifest, FileEntry
+    def test_variants_with_default(self):
+        """Test variants includes 'default' for default files."""
+        from powerfulcases.manifest import variants as manifest_variants, Manifest, FileEntry
 
         files = [
             FileEntry(path="default.dyr", format="psse_dyr", default=True),
             FileEntry(path="genrou.dyr", format="psse_dyr", variant="genrou"),
         ]
-        manifest = Manifest(name="test", files=files)
+        test_manifest = Manifest(name="test", files=files)
 
-        variants = list_variants(manifest, "psse_dyr")
-        assert "default" in variants
-        assert "genrou" in variants
+        result = manifest_variants(test_manifest, "psse_dyr")
+        assert "default" in result
+        assert "genrou" in result
 
     def test_manifest_with_data_version(self):
         """Test manifest with data_version field."""
@@ -1064,9 +1064,9 @@ class TestEdgeCases:
             assert len(v33) == 1
             assert v33[0].default is True
 
-    def test_get_file_entry_with_default_variant(self):
-        """Test get_file_entry with variant='default'."""
-        from powerfulcases.manifest import get_file_entry, Manifest, FileEntry
+    def test_file_entry_with_default_variant(self):
+        """Test file_entry with variant='default'."""
+        from powerfulcases.manifest import file_entry, Manifest, FileEntry
 
         files = [
             FileEntry(path="default.dyr", format="psse_dyr", default=True),
@@ -1074,17 +1074,17 @@ class TestEdgeCases:
         ]
         manifest = Manifest(name="test", files=files)
 
-        entry = get_file_entry(manifest, "psse_dyr", variant="default")
+        entry = file_entry(manifest, "psse_dyr", variant="default")
         assert entry is not None
         assert entry.path == "default.dyr"
 
-    def test_load_case_absolute_path(self):
-        """Test load_case with absolute path."""
+    def test_load_absolute_path(self):
+        """Test load with absolute path."""
         cases_dir = os.path.join(
             os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee14"
         )
         abs_path = os.path.abspath(cases_dir)
-        case = load_case(abs_path)
+        case = load(abs_path)
         assert case.name == "ieee14"
 
 
@@ -1104,13 +1104,13 @@ class TestManifestPaths:
         manifest = parse_manifest(manifest_path)
         assert manifest.name == "ieee14"
 
-    def test_create_manifest_with_string_path(self):
-        """Test create_manifest accepts string paths."""
+    def test_manifest_with_string_path(self):
+        """Test manifest accepts string paths."""
         with tempfile.TemporaryDirectory() as tmpdir:
             open(os.path.join(tmpdir, "test.raw"), "w").close()
 
             # Should accept string path
-            manifest_path = create_manifest(tmpdir)
+            manifest_path = manifest(tmpdir)
             assert os.path.isfile(manifest_path)
 
 
@@ -1262,7 +1262,7 @@ default = true
             (tmpdir / "test.raw").write_text("dummy")
 
             # Load case and test credits API
-            case = load_case(str(tmpdir))
+            case = load(str(tmpdir))
             assert case.has_credits()
             assert case.credits is not None
             assert case.license == "CC0-1.0"
@@ -1288,7 +1288,7 @@ default = true
             write_manifest(manifest, tmpdir / "manifest.toml")
             (tmpdir / "test.raw").write_text("dummy")
 
-            case = load_case(str(tmpdir))
+            case = load(str(tmpdir))
             assert not case.has_credits()
             assert case.credits is None
             assert case.license is None

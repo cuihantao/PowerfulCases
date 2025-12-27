@@ -209,7 +209,7 @@ Cannot determine format for .m files in $dir
 Found: $(join(ambiguous_files, ", "))
 
 These could be MATPOWER or PSAT format. Please create a manifest:
-  Julia:  PowerfulCases.create_manifest("$dir")
+  Julia:  PowerfulCases.manifest("$dir")
   Python: powerfulcases create-manifest $dir
 
 Then edit manifest.toml to specify the correct format for each .m file.
@@ -297,7 +297,7 @@ function write_manifest(manifest::Manifest, path::AbstractString)
 end
 
 """
-    create_manifest(dir::AbstractString) -> String
+    manifest(dir::AbstractString) -> String
 
 Create a manifest.toml file for a case directory.
 Returns the path to the created manifest.
@@ -305,7 +305,7 @@ Returns the path to the created manifest.
 If ambiguous files (.m) are found, creates a template manifest with
 placeholder format that must be edited manually.
 """
-function create_manifest(dir::AbstractString)
+function manifest(dir::AbstractString)
     isdir(dir) || error("Directory does not exist: $dir")
 
     manifest_path = joinpath(dir, "manifest.toml")
@@ -372,12 +372,12 @@ function get_default_file(manifest::Manifest, format::Symbol)
 end
 
 """
-    get_file_entry(manifest::Manifest, format::Symbol;
+    file_entry(manifest::Manifest, format::Symbol;
                    format_version=nothing, variant=nothing) -> Union{FileEntry, Nothing}
 
 Get a specific file entry matching the criteria.
 """
-function get_file_entry(manifest::Manifest, format::Symbol;
+function file_entry(manifest::Manifest, format::Symbol;
                         format_version::Union{String, Nothing}=nothing,
                         variant::Union{String, Nothing}=nothing)
     for f in manifest.files
@@ -404,29 +404,29 @@ function get_file_entry(manifest::Manifest, format::Symbol;
 end
 
 """
-    list_formats(manifest::Manifest) -> Vector{Symbol}
+    formats(manifest::Manifest) -> Vector{Symbol}
 
 List all unique formats available in the manifest.
 """
-function list_formats(manifest::Manifest)
+function formats(manifest::Manifest)
     unique([f.format for f in manifest.files])
 end
 
 """
-    list_variants(manifest::Manifest, format::Symbol) -> Vector{String}
+    variants(manifest::Manifest, format::Symbol) -> Vector{String}
 
 List all variants available for a given format.
 """
-function list_variants(manifest::Manifest, format::Symbol)
-    variants = String[]
+function variants(manifest::Manifest, format::Symbol)
+    result = String[]
     for f in manifest.files
         if f.format == format
             if f.variant !== nothing
-                push!(variants, f.variant)
+                push!(result, f.variant)
             elseif f.default
-                push!(variants, "default")
+                push!(result, "default")
             end
         end
     end
-    unique(variants)
+    unique(result)
 end

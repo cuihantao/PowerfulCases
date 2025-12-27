@@ -147,7 +147,7 @@ def get_case_base_url(name: str) -> str:
     return f"{registry.base_url}/{name}"
 
 
-def download_remote_case(name: str, force: bool = False) -> Path:
+def download(name: str, force: bool = False) -> Path:
     """
     Download a case from the remote registry.
 

@@ -2,15 +2,15 @@
 PowerfulCases - Power systems test case data management.
 
 New API (Recommended):
-    from powerfulcases import load_case, list_cases
+    from powerfulcases import load, cases
 
-    case = load_case("ieee14")
-    case = load_case("/path/to/my/project")
+    case = load("ieee14")
+    case = load("/path/to/my/project")
 
     case.raw                               # Default RAW file
     case.dyr                               # Default DYR file
-    get_file(case, "psse_raw")             # Same as case.raw
-    get_file(case, "psse_dyr", variant="genrou")  # Specific variant
+    file(case, "psse_raw")             # Same as case.raw
+    file(case, "psse_dyr", variant="genrou")  # Specific variant
 
 Legacy API (Deprecated):
     from powerfulcases import ieee14
@@ -32,10 +32,10 @@ from .manifest import (
     parse_manifest,
     infer_manifest,
     get_default_file,
-    get_file_entry,
-    list_formats as _list_formats,
-    list_variants as _list_variants,
-    create_manifest,
+    file_entry,
+    formats as _formats,
+    variants as _variants,
+    manifest,
 )
 from .cache import (
     get_cache_dir,
@@ -43,12 +43,12 @@ from .cache import (
     is_case_cached,
     get_cached_case_dir,
     list_cached_cases,
-    clear_cache,
-    cache_info,
+    clear,
+    info,
 )
 from .registry import (
     is_remote_case,
-    download_remote_case,
+    download as _download_remote,
     list_remote_cases,
 )
 
@@ -99,22 +99,22 @@ class CaseBundle:
     @property
     def raw(self) -> str:
         """Get the path to the default RAW file."""
-        return get_file(self, "psse_raw")
+        return file(self, "psse_raw")
 
     @property
     def dyr(self) -> Optional[str]:
         """Get the path to the default DYR file, or None if not available."""
-        return get_file(self, "psse_dyr", required=False)
+        return file(self, "psse_dyr", required=False)
 
     @property
     def matpower(self) -> str:
         """Get the path to the MATPOWER file."""
-        return get_file(self, "matpower")
+        return file(self, "matpower")
 
     @property
     def psat(self) -> str:
         """Get the path to the PSAT file."""
-        return get_file(self, "psat")
+        return file(self, "psat")
 
     # Credits API
     @property
@@ -157,7 +157,7 @@ class CaseBundle:
         Returns:
             Path to the variant DYR file
         """
-        return get_file(self, "psse_dyr", variant=variant)
+        return file(self, "psse_dyr", variant=variant)
 
     def list_dyr_variants(self) -> List[str]:
         """
@@ -166,7 +166,7 @@ class CaseBundle:
         Returns:
             List of variant names
         """
-        return list_variants(self, "psse_dyr")
+        return variants(self, "psse_dyr")
 
     def list_files(self) -> List[FileInfo]:
         """
@@ -195,7 +195,7 @@ class CaseBundle:
         return self.get_dyr(variant)
 
 
-def load_case(name_or_path: str) -> CaseBundle:
+def load(name_or_path: str) -> CaseBundle:
     """
     Load a case bundle by name or path.
 
@@ -206,8 +206,8 @@ def load_case(name_or_path: str) -> CaseBundle:
         CaseBundle object
 
     Examples:
-        case = load_case("ieee14")        # Built-in case
-        case = load_case("/path/to/dir")  # Local directory
+        case = load("ieee14")        # Built-in case
+        case = load("/path/to/dir")  # Local directory
     """
     path = Path(name_or_path)
 
@@ -225,7 +225,7 @@ def load_case(name_or_path: str) -> CaseBundle:
         return _load_remote_case(name_or_path)
 
     # Not found
-    available = list_cases()
+    available = cases()
     raise ValueError(
         f"Unknown case: '{name_or_path}'. Available cases: {', '.join(available)}"
     )
@@ -254,7 +254,7 @@ def _load_local_case(directory: Path) -> CaseBundle:
 def _load_remote_case(name: str) -> CaseBundle:
     """Load a remote case, downloading if necessary."""
     if not is_case_cached(name):
-        download_remote_case(name)
+        _download_remote(name)
 
     directory = get_cached_case_dir(name)
     manifest_path = directory / "manifest.toml"
@@ -265,7 +265,7 @@ def _load_remote_case(name: str) -> CaseBundle:
     return CaseBundle(name, directory, manifest, is_remote=True)
 
 
-def get_file(
+def file(
     case: CaseBundle,
     format: str,
     format_version: Optional[str] = None,
@@ -286,15 +286,15 @@ def get_file(
         Path to the file, or None if not found and not required
 
     Examples:
-        get_file(case, "psse_raw")                       # Default RAW file
-        get_file(case, "psse_dyr", variant="genrou")     # Specific variant
-        get_file(case, "psse_raw", format_version="34")  # Specific version
+        file(case, "psse_raw")                       # Default RAW file
+        file(case, "psse_dyr", variant="genrou")     # Specific variant
+        file(case, "psse_raw", format_version="34")  # Specific version
     """
     # Normalize format aliases
     actual_format = _normalize_format(format)
 
     # Find matching file entry
-    entry = get_file_entry(case.manifest, actual_format, format_version, variant)
+    entry = file_entry(case.manifest, actual_format, format_version, variant)
 
     if entry is None and variant is None and format_version is None:
         # Try to find default
@@ -302,12 +302,12 @@ def get_file(
 
     if entry is None:
         if required:
-            available = list_formats(case)
+            available = formats(case)
             if variant is not None:
-                variants = list_variants(case, actual_format)
+                var_list = variants(case, actual_format)
                 raise FileNotFoundError(
                     f"File not found for format '{format}' with variant '{variant}' "
-                    f"in case '{case.name}'. Available variants: {', '.join(variants)}"
+                    f"in case '{case.name}'. Available variants: {', '.join(var_list)}"
                 )
             elif format_version is not None:
                 raise FileNotFoundError(
@@ -334,7 +334,7 @@ def _normalize_format(format: str) -> str:
     return format
 
 
-def list_formats(case: CaseBundle) -> List[str]:
+def formats(case: CaseBundle) -> List[str]:
     """
     List all formats available in a case bundle.
 
@@ -344,10 +344,10 @@ def list_formats(case: CaseBundle) -> List[str]:
     Returns:
         List of format names
     """
-    return _list_formats(case.manifest)
+    return _formats(case.manifest)
 
 
-def list_variants(case: CaseBundle, format: str) -> List[str]:
+def variants(case: CaseBundle, format: str) -> List[str]:
     """
     List all variants available for a format in a case bundle.
 
@@ -359,33 +359,33 @@ def list_variants(case: CaseBundle, format: str) -> List[str]:
         List of variant names
     """
     actual_format = _normalize_format(format)
-    return _list_variants(case.manifest, actual_format)
+    return _variants(case.manifest, actual_format)
 
 
-def list_cases() -> List[str]:
+def cases() -> List[str]:
     """
     List all available case names (bundled + remote + cached).
 
     Returns:
         Sorted list of case names
     """
-    cases = set()
+    result = set()
 
     # Bundled cases
     if CASES_DIR.is_dir():
         for entry in CASES_DIR.iterdir():
             if entry.is_dir() and not entry.name.startswith("."):
-                cases.add(entry.name)
+                result.add(entry.name)
 
     # Remote cases from registry
     for name in list_remote_cases():
-        cases.add(name)
+        result.add(name)
 
     # Cached cases
     for name in list_cached_cases():
-        cases.add(name)
+        result.add(name)
 
-    return sorted(cases)
+    return sorted(result)
 
 
 # ============================================================================
@@ -411,20 +411,20 @@ def _make_legacy_case_fn(name: str):
         if name not in _deprecation_warned:
             _deprecation_warned.add(name)
             warnings.warn(
-                f"{name}() is deprecated. Use load_case('{name}') instead.\n\n"
+                f"{name}() is deprecated. Use load('{name}') instead.\n\n"
                 f"Old API:\n"
                 f"  case = {name}()\n"
                 f"  case.raw\n\n"
                 f"New API:\n"
-                f"  case = load_case('{name}')\n"
+                f"  case = load('{name}')\n"
                 f"  case.raw",
                 DeprecationWarning,
                 stacklevel=2,
             )
-        return load_case(name)
+        return load(name)
 
     fn.__name__ = name
-    fn.__doc__ = f"[DEPRECATED] Get the {name} test case bundle. Use load_case('{name}') instead."
+    fn.__doc__ = f"[DEPRECATED] Get the {name} test case bundle. Use load('{name}') instead."
     return fn
 
 

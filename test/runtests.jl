@@ -4,9 +4,9 @@ using SHA
 using Downloads
 
 @testset "PowerfulCases" begin
-    @testset "New API - load_case()" begin
-        @testset "load_case with bundled case" begin
-            case = load_case("ieee14")
+    @testset "New API - load()" begin
+        @testset "load with bundled case" begin
+            case = load("ieee14")
             @test case.name == "ieee14"
             @test isfile(case.raw)
             @test endswith(case.raw, "ieee14.raw")
@@ -15,81 +15,81 @@ using Downloads
             @test case.is_remote == false
         end
 
-        @testset "load_case with local directory" begin
+        @testset "load with local directory" begin
             # Use ieee14 directory as a local path test
             cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee14")
-            case = load_case(cases_dir)
+            case = load(cases_dir)
             @test case.name == "ieee14"
             @test isfile(case.raw)
         end
 
-        @testset "load_case unknown case error" begin
-            @test_throws ErrorException load_case("nonexistent_case_xyz")
+        @testset "load unknown case error" begin
+            @test_throws ErrorException load("nonexistent_case_xyz")
         end
     end
 
-    @testset "New API - get_file()" begin
-        case = load_case("ieee14")
+    @testset "New API - file()" begin
+        case = load("ieee14")
 
         # Default format access
-        raw_path = get_file(case, :raw)
+        raw_path = file(case, :raw)
         @test isfile(raw_path)
         @test endswith(raw_path, ".raw")
 
-        dyr_path = get_file(case, :dyr)
+        dyr_path = file(case, :dyr)
         @test isfile(dyr_path)
         @test endswith(dyr_path, ".dyr")
 
         # Full format names also work
-        raw_path2 = get_file(case, :psse_raw)
+        raw_path2 = file(case, :psse_raw)
         @test raw_path == raw_path2
 
         # With variant
-        genrou_path = get_file(case, :dyr, variant="genrou")
+        genrou_path = file(case, :dyr, variant="genrou")
         @test isfile(genrou_path)
         @test occursin("genrou", genrou_path)
 
         # With "default" variant (special case)
-        default_path = get_file(case, :dyr, variant="default")
+        default_path = file(case, :dyr, variant="default")
         @test isfile(default_path)
         @test default_path == dyr_path
 
         # Required=false for missing format
-        missing = get_file(case, :matpower, required=false)
+        missing = file(case, :matpower, required=false)
         @test missing === nothing
 
         # Required=true (default) for missing format throws error
-        @test_throws ErrorException get_file(case, :matpower)
+        @test_throws ErrorException file(case, :matpower)
 
         # Missing variant throws error
-        @test_throws ErrorException get_file(case, :dyr, variant="nonexistent_variant")
+        @test_throws ErrorException file(case, :dyr, variant="nonexistent_variant")
     end
 
     @testset "New API - list functions" begin
-        # list_cases returns strings now
-        cases = list_cases()
+        # cases returns strings now
+        cases = cases()
         @test "ieee14" in cases
         @test "ieee39" in cases
         @test length(cases) > 5
 
-        # list_formats
-        case = load_case("ieee14")
-        formats = list_formats(case)
+        # formats
+        case = load("ieee14")
+        formats = formats(case)
         @test :psse_raw in formats
         @test :psse_dyr in formats
 
-        # list_variants
-        variants = list_variants(case, :dyr)
+        # variants
+        variants = variants(case, :dyr)
         @test "genrou" in variants
         @test "default" in variants
 
-        # list_variants with alias
-        variants2 = list_variants(case, :psse_dyr)
+        # variants with alias
+        variants2 = variants(case, :psse_dyr)
         @test variants == variants2
     end
 
     @testset "New API - list_files with metadata" begin
-        case = load_case("ieee14")
+        case = load("ieee14")
         files = list_files(case)
         @test !isempty(files)
 
@@ -103,7 +103,7 @@ using Downloads
     end
 
     @testset "CaseBundle property access" begin
-        case = load_case("ieee14")
+        case = load("ieee14")
 
         # Standard properties
         @test case.name == "ieee14"
@@ -198,8 +198,8 @@ using Downloads
         end
     end
 
-    @testset "get_file_entry" begin
-        using PowerfulCases: get_file_entry, get_default_file, Manifest, FileEntry
+    @testset "file_entry" begin
+        using PowerfulCases: file_entry, get_default_file, Manifest, FileEntry
 
         files = [
             FileEntry("v33.raw", :psse_raw; format_version="33", default=true),
@@ -210,17 +210,17 @@ using Downloads
         manifest = Manifest("test"; files=files)
 
         # Get by format only
-        entry = get_file_entry(manifest, :psse_raw)
+        entry = file_entry(manifest, :psse_raw)
         @test entry !== nothing
         @test entry.path == "v33.raw"
 
         # Get by format_version
-        entry = get_file_entry(manifest, :psse_raw; format_version="34")
+        entry = file_entry(manifest, :psse_raw; format_version="34")
         @test entry !== nothing
         @test entry.path == "v34.raw"
 
         # Get by variant
-        entry = get_file_entry(manifest, :psse_dyr; variant="genrou")
+        entry = file_entry(manifest, :psse_dyr; variant="genrou")
         @test entry !== nothing
         @test entry.path == "genrou.dyr"
 
@@ -230,7 +230,7 @@ using Downloads
         @test entry.default == true
 
         # Missing format returns nothing
-        entry = get_file_entry(manifest, :matpower)
+        entry = file_entry(manifest, :matpower)
         @test entry === nothing
     end
 
@@ -261,7 +261,7 @@ using Downloads
     end
 
     @testset "Legacy API - get_dyr on CaseBundle" begin
-        case = load_case("ieee14")
+        case = load("ieee14")
         path = get_dyr(case, "genrou")
         @test isfile(path)
         @test occursin("genrou", path)
@@ -274,14 +274,14 @@ using Downloads
     end
 
     @testset "Cache functions" begin
-        using PowerfulCases: get_cache_dir, set_cache_dir, cache_info, is_case_cached, list_cached_cases
+        using PowerfulCases: get_cache_dir, set_cache_dir, info, is_case_cached, list_cached_cases
 
         # Default cache dir
         cache_dir = get_cache_dir()
         @test endswith(cache_dir, ".powerfulcases")
 
         # Cache info
-        info = cache_info()
+        info = info()
         @test haskey(info, :directory)
         @test haskey(info, :num_cases)
         @test haskey(info, :total_size_mb)
@@ -309,30 +309,30 @@ using Downloads
         @test registry isa PowerfulCases.Registry
     end
 
-    @testset "create_manifest helper" begin
-        using PowerfulCases: create_manifest
+    @testset "manifest helper" begin
+        using PowerfulCases: manifest
 
         # Create a temp directory with a .raw file
         mktempdir() do dir
             # Create a test file
             touch(joinpath(dir, "test.raw"))
 
-            # create_manifest should work
-            manifest_path = create_manifest(dir)
+            # manifest should work
+            manifest_path = manifest(dir)
             @test isfile(manifest_path)
             @test endswith(manifest_path, "manifest.toml")
         end
     end
 
-    @testset "create_manifest with ambiguous files" begin
-        using PowerfulCases: create_manifest
+    @testset "manifest with ambiguous files" begin
+        using PowerfulCases: manifest
 
         mktempdir() do dir
             # Create ambiguous .m file
             touch(joinpath(dir, "case.m"))
 
             # Should still create manifest but with placeholder format
-            manifest_path = create_manifest(dir)
+            manifest_path = manifest(dir)
             @test isfile(manifest_path)
 
             # Read and check it has placeholder
@@ -344,7 +344,7 @@ using Downloads
     @testset "Multiple cases" begin
         # Test a few different cases load correctly
         for name in ["ieee14", "ieee39", "case5", "npcc"]
-            case = load_case(name)
+            case = load(name)
             @test case.name == name
             @test isfile(case.raw)
         end
@@ -352,7 +352,7 @@ using Downloads
 
     @testset "Advanced cache tests" begin
         using PowerfulCases: set_cache_dir, ensure_cache_dir, get_cached_case_dir,
-                             clear_cache, download_file
+                             clear, download_file
 
         original = get_cache_dir()
         try
@@ -380,18 +380,18 @@ using Downloads
             # Test download_file exists and is callable
             @test isdefined(PowerfulCases, :download_file)
 
-            # Test clear_cache specific case
+            # Test clear specific case
             mktempdir() do dir
                 set_cache_dir(dir)
                 test_case = joinpath(dir, "test_case")
                 mkpath(test_case)
                 write(joinpath(test_case, "manifest.toml"), "name = \"test_case\"")
                 @test isdir(test_case)
-                clear_cache("test_case")
+                clear("test_case")
                 @test !isdir(test_case)
             end
 
-            # Test clear_cache all
+            # Test clear all
             mktempdir() do dir
                 cache_dir = joinpath(dir, "cache")
                 set_cache_dir(cache_dir)
@@ -399,7 +399,7 @@ using Downloads
                 mkpath(joinpath(cache_dir, "case1"))
                 mkpath(joinpath(cache_dir, "case2"))
                 @test isdir(cache_dir)
-                clear_cache(nothing)
+                clear(nothing)
                 @test !isdir(cache_dir)
             end
         finally
@@ -410,7 +410,7 @@ using Downloads
     @testset "Advanced registry tests" begin
         using PowerfulCases: parse_registry, Registry, get_case_base_url,
                              bundled_registry_path, cached_registry_path,
-                             download_remote_case
+                             download
 
         # Test parse_registry with new format
         mktempdir() do dir
@@ -457,10 +457,10 @@ remote_cases = ["case1", "case2", "case3"]
         @test isempty(empty_registry.remote_cases)
         @test empty_registry.version == "0.0.0"
 
-        # Test download_remote_case with unknown case
-        @test_throws ErrorException download_remote_case("nonexistent_xyz")
+        # Test download with unknown case
+        @test_throws ErrorException download("nonexistent_xyz")
 
-        # Test download_remote_case with cached case (should return early)
+        # Test download with cached case (should return early)
         if !isempty(registry.remote_cases)
             original = get_cache_dir()
             try
@@ -470,7 +470,7 @@ remote_cases = ["case1", "case2", "case3"]
                     test_case = joinpath(dir, case_name)
                     mkpath(test_case)
                     write(joinpath(test_case, "manifest.toml"), "name = \"$case_name\"")
-                    result = download_remote_case(case_name; force=false)
+                    result = download(case_name; force=false)
                     @test result == test_case
                 end
             finally
@@ -488,7 +488,7 @@ remote_cases = ["case1", "case2", "case3"]
                     case_name = registry.remote_cases[1]
 
                     # Download the remote case
-                    result = download_remote_case(case_name; force=true)
+                    result = download(case_name; force=true)
                     case_dir = joinpath(dir, case_name)
 
                     # Verify download succeeded
@@ -512,7 +512,7 @@ remote_cases = ["case1", "case2", "case3"]
     end
 
     @testset "Edge cases" begin
-        using PowerfulCases: infer_manifest, list_formats, list_variants, Manifest, FileEntry
+        using PowerfulCases: infer_manifest, formats, variants, Manifest, FileEntry
 
         # Test empty directory
         mktempdir() do dir
@@ -559,31 +559,31 @@ remote_cases = ["case1", "case2", "case3"]
             @test manifest.files[1].format == :psse_raw
         end
 
-        # Test list_formats with duplicates
+        # Test formats with duplicates
         files = [
             FileEntry("a.raw", :psse_raw),
             FileEntry("b.raw", :psse_raw),
             FileEntry("c.dyr", :psse_dyr),
         ]
         manifest = Manifest("test"; files=files)
-        formats = list_formats(manifest)
+        formats = formats(manifest)
         @test length(formats) == 2
         @test :psse_raw in formats
         @test :psse_dyr in formats
 
-        # Test list_variants with no variants
+        # Test variants with no variants
         files = [FileEntry("a.raw", :psse_raw)]
         manifest = Manifest("test"; files=files)
-        variants = list_variants(manifest, :psse_raw)
+        variants = variants(manifest, :psse_raw)
         @test isempty(variants)
 
-        # Test list_variants with default
+        # Test variants with default
         files = [
             FileEntry("default.dyr", :psse_dyr; default=true),
             FileEntry("genrou.dyr", :psse_dyr; variant="genrou"),
         ]
         manifest = Manifest("test"; files=files)
-        variants = list_variants(manifest, :psse_dyr)
+        variants = variants(manifest, :psse_dyr)
         @test "default" in variants
         @test "genrou" in variants
 
@@ -614,21 +614,21 @@ remote_cases = ["case1", "case2", "case3"]
             @test v33[1].default == true
         end
 
-        # Test get_file_entry with variant="default"
-        using PowerfulCases: get_file_entry
+        # Test file_entry with variant="default"
+        using PowerfulCases: file_entry
         files = [
             FileEntry("default.dyr", :psse_dyr; default=true),
             FileEntry("genrou.dyr", :psse_dyr; variant="genrou"),
         ]
         manifest = Manifest("test"; files=files)
-        entry = get_file_entry(manifest, :psse_dyr; variant="default")
+        entry = file_entry(manifest, :psse_dyr; variant="default")
         @test entry !== nothing
         @test entry.path == "default.dyr"
 
-        # Test load_case with absolute path
+        # Test load with absolute path
         cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee14")
         abs_path = abspath(cases_dir)
-        case = load_case(abs_path)
+        case = load(abs_path)
         @test case.name == "ieee14"
     end
 
@@ -698,7 +698,7 @@ remote_cases = ["case1", "case2", "case3"]
             write(joinpath(dir, "test.raw"), "dummy")
 
             # Load case and test credits API
-            case = load_case(dir)
+            case = load(dir)
             @test has_credits(case)
             @test get_credits(case) !== nothing
             @test get_license(case) == "CC0-1.0"
@@ -719,7 +719,7 @@ remote_cases = ["case1", "case2", "case3"]
             write_manifest(manifest, joinpath(dir, "manifest.toml"))
             write(joinpath(dir, "test.raw"), "dummy")
 
-            case_no_credits = load_case(dir)
+            case_no_credits = load(dir)
             @test !has_credits(case_no_credits)
             @test get_credits(case_no_credits) === nothing
             @test get_license(case_no_credits) === nothing

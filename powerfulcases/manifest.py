@@ -207,7 +207,7 @@ def infer_manifest(directory: Path) -> Manifest:
 Found: {', '.join(ambiguous_files)}
 
 These could be MATPOWER or PSAT format. Please create a manifest:
-  Julia:  PowerfulCases.create_manifest("{directory}")
+  Julia:  PowerfulCases.manifest("{directory}")
   Python: powerfulcases create-manifest {directory}
 
 Then edit manifest.toml to specify the correct format for each .m file.
@@ -276,7 +276,7 @@ def write_manifest(manifest: Manifest, path: Path) -> None:
         toml.dump(data, f)
 
 
-def create_manifest(directory: Path) -> Path:
+def manifest(directory: Path) -> Path:
     """
     Create a manifest.toml file for a case directory.
 
@@ -357,7 +357,7 @@ def get_default_file(manifest: Manifest, format: str) -> Optional[FileEntry]:
     return None
 
 
-def get_file_entry(
+def file_entry(
     manifest: Manifest,
     format: str,
     format_version: Optional[str] = None,
@@ -391,7 +391,7 @@ def get_file_entry(
     return None
 
 
-def list_formats(manifest: Manifest) -> List[str]:
+def formats(manifest: Manifest) -> List[str]:
     """
     List all unique formats available in the manifest.
 
@@ -404,7 +404,7 @@ def list_formats(manifest: Manifest) -> List[str]:
     return list(set(f.format for f in manifest.files))
 
 
-def list_variants(manifest: Manifest, format: str) -> List[str]:
+def variants(manifest: Manifest, format: str) -> List[str]:
     """
     List all variants available for a given format.
 
@@ -415,11 +415,11 @@ def list_variants(manifest: Manifest, format: str) -> List[str]:
     Returns:
         List of variant names
     """
-    variants = []
+    result = []
     for f in manifest.files:
         if f.format == format:
             if f.variant is not None:
-                variants.append(f.variant)
+                result.append(f.variant)
             elif f.default:
-                variants.append("default")
-    return list(set(variants))
+                result.append("default")
+    return list(set(result))

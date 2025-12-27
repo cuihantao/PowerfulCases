@@ -2,26 +2,26 @@
 powerfulcases - Test case data for power systems simulation
 
 New API (Recommended):
-    from powerfulcases import load_case, list_cases
+    from powerfulcases import load, cases
 
     # Load a case (built-in, remote, or local directory)
-    case = load_case("ieee14")
-    case = load_case("/path/to/my/project")
+    case = load("ieee14")
+    case = load("/path/to/my/project")
 
     # Access files by format
     case.raw                                    # Default RAW file
     case.dyr                                    # Default DYR file
-    get_file(case, "psse_raw")                  # Same as case.raw
-    get_file(case, "psse_dyr", variant="genrou")  # Specific variant
+    file(case, "psse_raw")                  # Same as case.raw
+    file(case, "psse_dyr", variant="genrou")  # Specific variant
 
     # Discovery
-    list_cases()                    # All available cases
-    list_formats(case)              # Available formats
-    list_variants(case, "psse_dyr") # Variants for a format
+    cases()                    # All available cases
+    formats(case)              # Available formats
+    variants(case, "psse_dyr") # Variants for a format
 
     # Cache management (for remote cases)
-    download_case("activsg70k")     # Pre-download large case
-    clear_cache("activsg70k")       # Remove from cache
+    download("activsg70k")     # Pre-download large case
+    clear("activsg70k")       # Remove from cache
 
 Legacy API (Deprecated):
     case = ieee14()        # Still works, emits deprecation warning
@@ -32,21 +32,21 @@ Legacy API (Deprecated):
 # New API exports
 from .cases import (
     CaseBundle,
-    load_case,
-    get_file,
-    list_cases,
-    list_formats,
-    list_variants,
-    create_manifest,
+    load,
+    file,
+    cases,
+    formats,
+    variants,
+    manifest,
 )
 from .cache import (
     get_cache_dir,
     set_cache_dir,
-    clear_cache,
-    cache_info,
+    clear,
+    info,
 )
 from .registry import (
-    download_remote_case as download_case,
+    download,
     list_remote_cases,
 )
 
@@ -54,20 +54,20 @@ from .registry import (
 __all__ = [
     # Core
     "CaseBundle",
-    "load_case",
-    "get_file",
-    "list_cases",
-    "list_formats",
-    "list_variants",
+    "load",
+    "file",
+    "cases",
+    "formats",
+    "variants",
     # Manifest
-    "create_manifest",
+    "manifest",
     # Cache
     "get_cache_dir",
     "set_cache_dir",
-    "clear_cache",
-    "cache_info",
+    "clear",
+    "info",
     # Remote
-    "download_case",
+    "download",
     "list_remote_cases",
 ]
 
@@ -121,7 +121,7 @@ _legacy_cases = [
 __all__.extend(_legacy_cases)
 
 # Generate any additional case functions discovered at runtime
-for _name in list_cases():
+for _name in cases():
     if _name not in _legacy_cases and not hasattr(_module, _name):
         _fn = _make_legacy_case_fn(_name)
         setattr(_module, _name, _fn)

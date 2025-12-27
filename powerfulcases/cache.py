@@ -97,7 +97,7 @@ def download_file(url: str, dest: Path, progress: bool = True) -> Path:
     return dest
 
 
-def clear_cache(name: Optional[str] = None) -> None:
+def clear(name: Optional[str] = None) -> None:
     """
     Clear cached cases.
 
@@ -147,7 +147,7 @@ class CacheInfo(NamedTuple):
     total_size_mb: float
 
 
-def cache_info() -> CacheInfo:
+def info() -> CacheInfo:
     """
     Get information about the cache.
 

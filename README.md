@@ -23,7 +23,7 @@ pip install powerfulcases
 # Julia
 using PowerfulCases
 
-case = load_case("/projects/utility-data/summer-peak-2024")
+case = load("/projects/utility-data/summer-peak-2024")
 case.raw   # → /projects/utility-data/summer-peak-2024/model.raw
 case.dyr   # → /projects/utility-data/summer-peak-2024/dynamics.dyr
 ```
@@ -32,7 +32,7 @@ case.dyr   # → /projects/utility-data/summer-peak-2024/dynamics.dyr
 # Python
 import powerfulcases as pcase
 
-case = pcase.load_case("/projects/utility-data/summer-peak-2024")
+case = pcase.load("/projects/utility-data/summer-peak-2024")
 case.raw   # → /projects/utility-data/summer-peak-2024/model.raw
 case.dyr   # → /projects/utility-data/summer-peak-2024/dynamics.dyr
 ```
@@ -54,28 +54,28 @@ Standard IEEE and synthetic cases are included for testing and benchmarking:
 # Julia
 using PowerfulCases
 
-case = load_case("ieee14")
+case = load("ieee14")
 case.raw                                    # Default RAW file
 case.dyr                                    # Default DYR file
-get_file(case, :dyr, variant="genrou")      # Specific dynamic model variant
+file(case, :dyr, variant="genrou")      # Specific dynamic model variant
 
-list_cases()                    # All available cases
-list_formats(case)              # Formats in this case
-list_variants(case, :dyr)       # Available DYR variants
+cases()                    # All available cases
+formats(case)              # Formats in this case
+variants(case, :dyr)       # Available DYR variants
 ```
 
 ```python
 # Python
 import powerfulcases as pcase
 
-case = pcase.load_case("ieee14")
+case = pcase.load("ieee14")
 case.raw
 case.dyr
-pcase.get_file(case, "psse_dyr", variant="genrou")
+pcase.file(case, "psse_dyr", variant="genrou")
 
-pcase.list_cases()
-pcase.list_formats(case)
-pcase.list_variants(case, "psse_dyr")
+pcase.cases()
+pcase.formats(case)
+pcase.variants(case, "psse_dyr")
 ```
 
 ### Available Cases
@@ -187,10 +187,10 @@ authors = ["Grid Operations Team"]
 # Julia
 using PowerfulCases
 
-download_case("ACTIVSg70k")     # Pre-download
-cache_info()                    # Show cache status
-clear_cache("ACTIVSg70k")       # Remove specific case
-clear_cache()                   # Clear everything
+download("ACTIVSg70k")     # Pre-download
+info()                    # Show cache status
+clear("ACTIVSg70k")       # Remove specific case
+clear()                   # Clear everything
 set_cache_dir("/custom/path")   # Change cache location
 ```
 
@@ -221,7 +221,7 @@ using PowerfulCases
 case = ieee14()
 
 # New (recommended)
-case = load_case("ieee14")
+case = load("ieee14")
 ```
 
 ## License
