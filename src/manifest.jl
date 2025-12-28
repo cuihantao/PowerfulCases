@@ -13,7 +13,8 @@ const FORMAT_EXTENSIONS = Dict{Symbol, Vector{String}}(
     :matpower => [".m"],
     :psat => [".m"],
     :json => [".json"],
-    :xlsx => [".xlsx"],
+    :andes => [".xlsx"],
+    :opendss => [".dss"],
 )
 
 """
@@ -22,14 +23,13 @@ Extensions that are unambiguous (map to exactly one format).
 const UNAMBIGUOUS_EXTENSIONS = Dict{String, Symbol}(
     ".raw" => :psse_raw,
     ".dyr" => :psse_dyr,
-    ".json" => :json,
-    ".xlsx" => :xlsx,
+    ".dss" => :opendss,
 )
 
 """
 Extensions that are ambiguous (could be multiple formats).
 """
-const AMBIGUOUS_EXTENSIONS = Set([".m"])
+const AMBIGUOUS_EXTENSIONS = Set([".m", ".xlsx", ".json"])
 
 """
     FileEntry

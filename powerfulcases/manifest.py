@@ -23,19 +23,19 @@ FORMAT_EXTENSIONS: Dict[str, List[str]] = {
     "matpower": [".m"],
     "psat": [".m"],
     "json": [".json"],
-    "xlsx": [".xlsx"],
+    "andes": [".xlsx"],
+    "opendss": [".dss"],
 }
 
 # Extensions that are unambiguous (map to exactly one format)
 UNAMBIGUOUS_EXTENSIONS: Dict[str, str] = {
     ".raw": "psse_raw",
     ".dyr": "psse_dyr",
-    ".json": "json",
-    ".xlsx": "xlsx",
+    ".dss": "opendss"
 }
 
 # Extensions that are ambiguous (could be multiple formats)
-AMBIGUOUS_EXTENSIONS: Set[str] = {".m"}
+AMBIGUOUS_EXTENSIONS: Set[str] = {".m", ".xlsx", ".json"}
 
 
 @dataclass
