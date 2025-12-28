@@ -40,6 +40,7 @@ get_dyr(case, "genrou") # Works
 module PowerfulCases
 
 using TOML
+import Base: show
 
 # Include submodules
 include("manifest.jl")
@@ -99,6 +100,70 @@ function Base.getproperty(cb::CaseBundle, prop::Symbol)
 end
 
 Base.propertynames(cb::CaseBundle) = (:name, :dir, :manifest, :is_remote, :raw, :dyr, formats(cb)...)
+
+# Functor syntax for backward compatibility: case("genrou") → file(case, :dyr, variant="genrou")
+(cb::CaseBundle)(variant::String) = file(cb, :psse_dyr; variant=variant)
+
+# Pretty printing for CaseBundle (matches Python `pcase info` output)
+function show(io::IO, ::MIME"text/plain", cb::CaseBundle)
+    println(io, "Case: ", cb.name)
+    println(io, "Directory: ", cb.dir)
+    println(io, "Remote: ", cb.is_remote)
+
+    m = cb.manifest
+    if !isempty(m.description)
+        println(io, "Description: ", m.description)
+    end
+    if m.data_version !== nothing && !isempty(m.data_version)
+        println(io, "Data version: ", m.data_version)
+    end
+
+    # Credits section
+    if m.credits !== nothing
+        println(io)
+        println(io, "Credits:")
+        if m.credits.license !== nothing
+            println(io, "  License: ", m.credits.license)
+        end
+        if !isempty(m.credits.authors)
+            println(io, "  Authors: ", join(m.credits.authors, ", "))
+        end
+        if !isempty(m.credits.maintainers)
+            println(io, "  Maintainers: ", join(m.credits.maintainers, ", "))
+        end
+        if !isempty(m.credits.citations)
+            println(io, "  Citations:")
+            for cit in m.credits.citations
+                println(io, "    - ", cit.text)
+                if cit.doi !== nothing
+                    println(io, "      DOI: ", cit.doi)
+                end
+            end
+        end
+    end
+
+    # Files section
+    println(io)
+    println(io, "Files:")
+    for f in m.files
+        parts = String["  $(f.path)", "($(f.format))"]
+        if f.format_version !== nothing
+            push!(parts, "v$(f.format_version)")
+        end
+        if f.variant !== nothing
+            push!(parts, "[$(f.variant)]")
+        end
+        if f.default
+            push!(parts, "*default*")
+        end
+        println(io, join(parts, " "))
+    end
+end
+
+# Compact show for CaseBundle
+function show(io::IO, cb::CaseBundle)
+    print(io, "CaseBundle(\"", cb.name, "\")")
+end
 
 """
     load(name_or_path::AbstractString) -> CaseBundle
@@ -372,79 +437,21 @@ end
 # ============================================================================
 
 """
-    LegacyCaseBundle
+    get_dyr(cb::CaseBundle, variant::String) -> String
 
-Wrapper for backward compatibility with old API.
-Wraps a CaseBundle but provides the old interface.
+Get the path to a DYR variant file. Convenience function.
 """
-struct LegacyCaseBundle
-    bundle::CaseBundle
-    _name::Symbol  # Keep Symbol for old API compatibility
-end
-
-function Base.getproperty(lcb::LegacyCaseBundle, prop::Symbol)
-    if prop === :bundle
-        return getfield(lcb, :bundle)
-    elseif prop === :_name
-        return getfield(lcb, :_name)
-    elseif prop === :name
-        return getfield(lcb, :_name)
-    elseif prop === :dir
-        return getfield(lcb, :bundle).dir
-    elseif prop === :raw
-        return file(getfield(lcb, :bundle), :psse_raw)
-    elseif prop === :dyr
-        return file(getfield(lcb, :bundle), :psse_dyr; required=false)
-    else
-        error("CaseBundle has no property $prop. Use .raw, .dyr, or get_dyr(case, variant)")
-    end
-end
-
-Base.propertynames(::LegacyCaseBundle) = (:name, :dir, :raw, :dyr)
-
-# Functor for legacy API: case("genrou")
-function (lcb::LegacyCaseBundle)(variant::String)
-    get_dyr(lcb, variant)
-end
-
-"""
-    get_dyr(cb::LegacyCaseBundle, variant::String) -> String
-
-[Legacy API] Get the path to a DYR variant file.
-"""
-function get_dyr(cb::LegacyCaseBundle, variant::String)
-    file(cb.bundle, :psse_dyr; variant=variant)
-end
-
-# Also support get_dyr on new CaseBundle for convenience
 function get_dyr(cb::CaseBundle, variant::String)
     file(cb, :psse_dyr; variant=variant)
 end
 
 """
-    list_dyr_variants(cb) -> Vector{String}
+    list_dyr_variants(cb::CaseBundle) -> Vector{String}
 
-[Legacy API] List available DYR variants for a case.
+List available DYR variants for a case.
 """
-function list_dyr_variants(cb::LegacyCaseBundle)
-    variants(cb.bundle, :psse_dyr)
-end
-
 function list_dyr_variants(cb::CaseBundle)
     variants(cb, :psse_dyr)
-end
-
-# Legacy file that takes a filename string
-function file(cb::LegacyCaseBundle, filename::String)
-    path = joinpath(cb.dir, filename)
-    if !isfile(path)
-        error("File not found in $(cb.name) bundle: $filename")
-    end
-    return path
-end
-
-function list_files(cb::LegacyCaseBundle)
-    list_files(cb.bundle)
 end
 
 """
@@ -484,15 +491,14 @@ function path(filename::String)
 end
 
 # ============================================================================
-# Auto-generate legacy case accessor functions (deprecated)
+# Deprecated case accessor functions (ieee14(), ieee39(), etc.)
 # ============================================================================
 
 # Track if deprecation warning has been shown for each case
 const _DEPRECATION_WARNED = Set{Symbol}()
 
-function _create_legacy_case(name::Symbol)
+function _create_deprecated_case(name::Symbol)
     name_str = string(name)
-    dir = joinpath(CASES_DIR, name_str)
 
     # Show deprecation warning once per case
     if !(name in _DEPRECATION_WARNED)
@@ -510,25 +516,8 @@ New API:
 """ maxlog=1
     end
 
-    manifest_path = joinpath(dir, "manifest.toml")
-    if isfile(manifest_path)
-        manifest = parse_manifest(manifest_path)
-    else
-        manifest = infer_manifest(dir)
-    end
-    bundle = CaseBundle(name_str, dir, manifest, false)
-    LegacyCaseBundle(bundle, name)
-end
-
-# Generate at runtime to pick up any new cases
-function __init__()
-    for name_str in cases()
-        name = Symbol(name_str)
-        dir = joinpath(CASES_DIR, name_str)
-        if isdir(dir) && !isdefined(@__MODULE__, name)
-            @eval $name() = _create_legacy_case($(QuoteNode(name)))
-        end
-    end
+    # Return CaseBundle directly (no wrapper needed)
+    load(name_str)
 end
 
 # Pre-generate for known cases at compile time
@@ -539,18 +528,17 @@ for name in [:ieee14, :ieee39, :ieee118, :ACTIVSg2000,
     name_str = string(name)
     @eval begin
         """
-            $($name_str)() -> LegacyCaseBundle
+            $($name_str)() -> CaseBundle
 
         [DEPRECATED] Get the $($name_str) test case bundle.
         Use `load("$($name_str)")` instead.
         """
-        $name() = _create_legacy_case($(QuoteNode(name)))
+        $name() = _create_deprecated_case($(QuoteNode(name)))
         export $name
     end
 end
 
 # Export legacy API for backward compatibility
 export get_dyr, list_dyr_variants, path
-export LegacyCaseBundle
 
 end # module

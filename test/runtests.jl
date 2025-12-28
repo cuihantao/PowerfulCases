@@ -63,6 +63,15 @@ using Downloads
 
         # Missing variant throws error
         @test_throws ErrorException file(case, :dyr, variant="nonexistent_variant")
+
+        # RAW variant (singlegen) for ACTIVSg2000
+        case2000 = load("ACTIVSg2000")
+        singlegen_raw = file(case2000, :raw, variant="singlegen")
+        @test isfile(singlegen_raw)
+        @test occursin("singlegen", singlegen_raw)
+        singlegen_dyr = file(case2000, :dyr, variant="singlegen")
+        @test isfile(singlegen_dyr)
+        @test occursin("singlegen", singlegen_dyr)
     end
 
     @testset "New API - list functions" begin
@@ -235,27 +244,27 @@ using Downloads
     end
 
     @testset "Legacy API - backward compatibility" begin
-        # ieee14() should work but emit deprecation warning
+        # ieee14() should work but emit deprecation warning (returns CaseBundle now)
         case = PowerfulCases.ieee14()
-        @test case isa PowerfulCases.LegacyCaseBundle
-        @test case.name == :ieee14
+        @test case isa PowerfulCases.CaseBundle
+        @test case.name == "ieee14"  # Now returns String, not Symbol
         @test isfile(case.raw)
         @test case.dyr !== nothing
         @test isdir(case.dir)
 
         # get_dyr still works
-        variants = list_dyr_variants(case)
-        @test variants isa Vector{String}
+        variant_list = list_dyr_variants(case)
+        @test variant_list isa Vector{String}
 
-        if !isempty(variants)
-            path = get_dyr(case, variants[1])
+        if !isempty(variant_list)
+            path = get_dyr(case, variant_list[1])
             @test isfile(path)
             # Functor syntax
-            path2 = case(variants[1])
+            path2 = case(variant_list[1])
             @test path == path2
         end
 
-        # list_files on legacy bundle
+        # list_files on CaseBundle
         files = list_files(case)
         @test !isempty(files)
     end
