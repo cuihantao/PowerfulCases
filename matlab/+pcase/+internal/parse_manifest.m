@@ -21,11 +21,13 @@ function manifest = parse_manifest(filepath)
     current_file = struct();
     in_file_block = false;
 
-    for i = 1:numel(lines)
+    i = 1;
+    while i <= numel(lines)
         line = strtrim(lines{i});
 
         % Skip empty lines and comments
         if isempty(line) || pcase.internal.starts_with(line, '#')
+            i = i + 1;
             continue
         end
 
@@ -48,6 +50,7 @@ function manifest = parse_manifest(filepath)
                 % Create new citation entry immediately
                 manifest.credits.citations{end+1} = struct();
             end
+            i = i + 1;
             continue
         end
 
@@ -61,6 +64,7 @@ function manifest = parse_manifest(filepath)
             end
 
             current_section = line(2:end-1);
+            i = i + 1;
             continue
         end
 
@@ -69,6 +73,21 @@ function manifest = parse_manifest(filepath)
         if ~isempty(eq_idx)
             key = strtrim(line(1:eq_idx(1)-1));
             value_str = strtrim(line(eq_idx(1)+1:end));
+
+            % Handle multi-line arrays: accumulate lines until brackets match
+            if ~isempty(value_str) && value_str(1) == '['
+                open_count = sum(value_str == '[') - sum(value_str == ']');
+                while open_count > 0 && i < numel(lines)
+                    i = i + 1;
+                    next_line = strtrim(lines{i});
+                    % Skip comment lines inside array
+                    if ~isempty(next_line) && next_line(1) ~= '#'
+                        value_str = [value_str, ' ', next_line];
+                        open_count = open_count + sum(next_line == '[') - sum(next_line == ']');
+                    end
+                end
+            end
+
             value = pcase.internal.parse_toml_value(value_str);
 
             if isempty(current_section)
@@ -86,6 +105,7 @@ function manifest = parse_manifest(filepath)
                 current_file.(key) = value;
             end
         end
+        i = i + 1;
     end
 
     % Save last file if we were in a file block

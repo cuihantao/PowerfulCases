@@ -29,10 +29,12 @@ function registry = load_registry()
     % Parse the registry file using shared helper
     lines = pcase.internal.read_lines(registry_path);
 
-    for i = 1:numel(lines)
+    i = 1;
+    while i <= numel(lines)
         line = strtrim(lines{i});
 
         if isempty(line) || pcase.internal.starts_with(line, '#')
+            i = i + 1;
             continue
         end
 
@@ -42,6 +44,20 @@ function registry = load_registry()
             key = strtrim(line(1:eq_idx(1)-1));
             value_str = strtrim(line(eq_idx(1)+1:end));
 
+            % Handle multi-line arrays: accumulate lines until brackets match
+            if ~isempty(value_str) && value_str(1) == '['
+                open_count = sum(value_str == '[') - sum(value_str == ']');
+                while open_count > 0 && i < numel(lines)
+                    i = i + 1;
+                    next_line = strtrim(lines{i});
+                    % Skip comment lines inside array
+                    if ~isempty(next_line) && next_line(1) ~= '#'
+                        value_str = [value_str, ' ', next_line];
+                        open_count = open_count + sum(next_line == '[') - sum(next_line == ']');
+                    end
+                end
+            end
+
             if strcmp(key, 'version')
                 registry.version = pcase.internal.parse_toml_value(value_str);
             elseif strcmp(key, 'base_url')
@@ -50,5 +66,6 @@ function registry = load_registry()
                 registry.remote_cases = pcase.internal.parse_toml_value(value_str);
             end
         end
+        i = i + 1;
     end
 end
