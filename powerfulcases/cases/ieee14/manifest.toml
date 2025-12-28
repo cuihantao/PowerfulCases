@@ -60,3 +60,7 @@ path = "ieee14_island.raw"
 format = "psse_raw"
 format_version = "33"
 variant = "island"
+
+[[files]]
+path = "ieee14.m"
+format = "matpower"

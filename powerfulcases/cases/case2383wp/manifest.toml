@@ -1,0 +1,18 @@
+name = "case2383wp"
+description = "WP  Power flow data for Polish system - winter 1999-2000 peak."
+
+[credits]
+authors = ["Roman Korab"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "Data provided by Roman Korab, Silesian University of Technology"
+
+[[credits.citations]]
+text = "R. D. Zimmerman, C. E. Murillo-Sanchez, R. J. Thomas, 'MATPOWER: Steady-State Operations, Planning, and Analysis Tools for Power Systems Research and Education,' IEEE Trans. Power Systems, vol. 26, no. 1, pp. 12-19, Feb. 2011"
+doi = "10.1109/TPWRS.2010.2051168"
+
+[[files]]
+path = "case2383wp.m"
+format = "matpower"
+default = true

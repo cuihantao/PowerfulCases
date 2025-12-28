@@ -1,0 +1,20 @@
+name = "case6470rte"
+description = "RTE  AC Power flow data for French system."
+
+[credits]
+license = "CC-BY-4.0"
+authors = ["C. Josz", "S. Fliscounakis", "J. Maeght", "P. Panciatici"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "C. Josz, S. Fliscounakis, J. Maeght, P. Panciatici, 'AC Power Flow Data in MATPOWER and QCQP Format: iTesla, RTE Snapshots, and PEGASE,' arXiv:1603.01533, 2016"
+url = "https://arxiv.org/abs/1603.01533"
+
+[[credits.citations]]
+text = "R. D. Zimmerman, C. E. Murillo-Sanchez, R. J. Thomas, 'MATPOWER: Steady-State Operations, Planning, and Analysis Tools for Power Systems Research and Education,' IEEE Trans. Power Systems, vol. 26, no. 1, pp. 12-19, Feb. 2011"
+doi = "10.1109/TPWRS.2010.2051168"
+
+[[files]]
+path = "case6470rte.m"
+format = "matpower"
+default = true

@@ -1,0 +1,22 @@
+name = "ieee24_rts"
+description = "_IEEE_RTS  Power flow data for the IEEE RELIABILITY TEST SYSTEM."
+
+[credits]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "IEEE Reliability Test System Task Force, 'IEEE reliability test system,' IEEE Trans. Power Apparatus and Systems, vol. 98, no. 6, pp. 2047-2054, Nov./Dec. 1979"
+doi = "10.1109/TPAS.1979.319398"
+
+[[credits.citations]]
+text = "IEEE Reliability Test System Task Force, 'IEEE reliability test system-96,' IEEE Trans. Power Systems, vol. 14, no. 3, pp. 1010-1020, Aug. 1999"
+doi = "10.1109/59.780914"
+
+[[credits.citations]]
+text = "R. D. Zimmerman, C. E. Murillo-Sanchez, R. J. Thomas, 'MATPOWER: Steady-State Operations, Planning, and Analysis Tools for Power Systems Research and Education,' IEEE Trans. Power Systems, vol. 26, no. 1, pp. 12-19, Feb. 2011"
+doi = "10.1109/TPWRS.2010.2051168"
+
+[[files]]
+path = "ieee24_rts.m"
+format = "matpower"
+default = true

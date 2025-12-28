@@ -14,3 +14,7 @@ path = "case5.raw"
 format = "psse_raw"
 format_version = "33"
 default = true
+
+[[files]]
+path = "case5.m"
+format = "matpower"

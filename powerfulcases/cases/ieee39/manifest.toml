@@ -33,3 +33,7 @@ path = "ieee39_rt.raw"
 format = "psse_raw"
 format_version = "33"
 variant = "rt"
+
+[[files]]
+path = "ieee39.m"
+format = "matpower"

@@ -8,8 +8,8 @@ dist/
 .eggs/
 .pytest_cache/
 
-# Julia
-Manifest.toml
+# Julia (root Manifest.toml only, not case manifest.toml files)
+/Manifest.toml
 
 # IDE
 .vscode/

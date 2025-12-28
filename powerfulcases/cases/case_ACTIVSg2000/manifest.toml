@@ -1,0 +1,18 @@
+name = "case_ACTIVSg2000"
+description = "Synthetic Texas 2000-bus power system model."
+
+[credits]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "A. B. Birchfield, T. Xu, K. M. Gegner, K. S. Shetye, T. J. Overbye, 'Grid Structural Characteristics as Validation Criteria for Synthetic Networks,' IEEE Trans. Power Systems, vol. 32, no. 4, pp. 3258-3265, July 2017"
+doi = "10.1109/TPWRS.2016.2616385"
+
+[[credits.citations]]
+text = "R. D. Zimmerman, C. E. Murillo-Sanchez, R. J. Thomas, 'MATPOWER: Steady-State Operations, Planning, and Analysis Tools for Power Systems Research and Education,' IEEE Trans. Power Systems, vol. 26, no. 1, pp. 12-19, Feb. 2011"
+doi = "10.1109/TPWRS.2010.2051168"
+
+[[files]]
+path = "case_ACTIVSg2000.m"
+format = "matpower"
+default = true
