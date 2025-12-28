@@ -103,18 +103,214 @@ pcase.formats(case)
 pcase.variants(case, 'psse_dyr')
 ```
 
-### Available Cases
+## Tool Integration
 
-| Case | Description |
-|------|-------------|
-| `ieee14` | IEEE 14-bus test system |
-| `ieee39` | IEEE 39-bus (New England) system |
-| `ieee118` | IEEE 118-bus system |
-| `ACTIVSg2000` | ACTIVS 2000-bus synthetic grid |
-| `ACTIVSg10k` | ACTIVS 10,000-bus synthetic grid |
-| `ACTIVSg70k` | ACTIVS 70,000-bus synthetic grid (large, downloaded on demand) |
-| `case5`, `case9` | Small test cases |
-| `npcc` | NPCC test system |
+PowerfulCases provides test data for your existing power system analysis workflow. Here are examples for popular tools.
+
+### Python: ANDES (Time Domain Simulation)
+
+[ANDES](https://docs.andes.app/) is a Python library for power system modeling and simulation.
+
+```python
+import andes
+import powerfulcases as pcase
+
+# Load IEEE 14-bus with GENROU dynamic models
+case = pcase.load("ieee14")
+
+# ANDES can read PSS/E RAW + DYR directly
+ss = andes.load(case.raw, addfile=pcase.file(case, "psse_dyr", variant="genrou"))
+
+# Run power flow, then time domain simulation
+ss.PFlow.run()
+ss.TDS.config.tf = 10  # 10-second simulation
+ss.TDS.run()
+
+# Plot generator speeds
+ss.TDS.plt.plot(ss.GENROU.omega)
+```
+
+For cases with ANDES-native Excel format:
+
+```python
+case = pcase.load("ieee14")
+ss = andes.load(pcase.file(case, "andes"))  # ieee14.xlsx
+```
+
+### Python: pandapower (Power Flow & OPF)
+
+[pandapower](https://www.pandapower.org/) can import MATPOWER cases directly.
+
+```python
+import pandapower as pp
+import pandapower.converter as pc
+import powerfulcases as pcase
+
+# Load any MATPOWER case
+case = pcase.load("case118zh")
+net = pc.from_mpc(pcase.file(case, "matpower"))
+
+# Run power flow
+pp.runpp(net)
+print(net.res_bus.head())
+
+# Run optimal power flow
+pp.runopp(net)
+print(f"Total generation cost: {net.res_cost}")
+```
+
+Large-scale cases for benchmarking:
+
+```python
+# European transmission grid (13,659 buses)
+pcase.download("case13659pegase")  # One-time download
+case = pcase.load("case13659pegase")
+net = pc.from_mpc(pcase.file(case, "matpower"))
+pp.runpp(net)
+```
+
+### Python: PYPOWER (MATPOWER Port)
+
+[PYPOWER](https://github.com/rwl/PYPOWER) is a Python port of MATPOWER.
+
+```python
+from pypower.api import runpf, runopf
+from pypower.loadcase import loadcase
+import powerfulcases as pcase
+
+# Load case from file
+case = pcase.load("case30Q")
+ppc = loadcase(pcase.file(case, "matpower"))
+
+# Run power flow
+results, success = runpf(ppc)
+print(f"Power flow {'converged' if success else 'failed'}")
+
+# Run OPF
+results, success = runopf(ppc)
+```
+
+### Python: GridCal (GUI + Scripting)
+
+[GridCal](https://www.gridcal.org/) supports multiple import formats.
+
+```python
+import GridCal.Engine as gce
+import powerfulcases as pcase
+
+# Load from PSS/E RAW
+case = pcase.load("ieee39")
+grid = gce.FileOpen(case.raw).open()
+
+# Or from MATPOWER
+case = pcase.load("case2383wp")  # Polish winter peak
+grid = gce.FileOpen(pcase.file(case, "matpower")).open()
+
+# Run power flow
+pf = gce.PowerFlowDriver(grid, gce.PowerFlowOptions())
+pf.run()
+print(grid.get_bus_df())
+```
+
+### Python: PyPSA (Network Optimization)
+
+[PyPSA](https://pypsa.org/) focuses on energy system optimization. Use pandapower as a bridge:
+
+```python
+import pypsa
+import pandapower as pp
+import pandapower.converter as pc
+import powerfulcases as pcase
+
+# Load via pandapower, convert to PyPSA
+case = pcase.load("case118zh")
+net = pc.from_mpc(pcase.file(case, "matpower"))
+network = pypsa.Network()
+network.import_from_pandapower_net(net)
+
+# Now use PyPSA for optimization
+network.lopf()
+```
+
+### MATLAB: MATPOWER
+
+[MATPOWER](https://matpower.org/) is the original tool for many bundled cases.
+
+```matlab
+% Add PowerfulCases to path
+addpath('/path/to/PowerfulCases/matlab')
+
+% Load case and run power flow
+c = pcase.load('case2736sp');
+mpc = loadcase(pcase.file(c, 'matpower'));
+results = runpf(mpc);
+
+% Run optimal power flow
+results = runopf(mpc);
+fprintf('Total cost: %.2f $/hr\n', results.f);
+```
+
+### Julia: PowerModels.jl
+
+[PowerModels.jl](https://lanl-ansi.github.io/PowerModels.jl/) for optimization:
+
+```julia
+using PowerModels
+using PowerfulCases
+
+case = load("case118zh")
+result = run_ac_opf(file(case, :matpower), ACPPowerModel, optimizer)
+```
+
+### Common Workflow Patterns
+
+**Batch processing multiple cases:**
+
+```python
+import powerfulcases as pcase
+
+# Test your algorithm across standard IEEE cases
+for name in ["ieee14", "ieee39", "ieee118"]:
+    case = pcase.load(name)
+    # ... run analysis
+    print(f"{name}: completed")
+```
+
+**Benchmarking with increasing scale:**
+
+```python
+import powerfulcases as pcase
+import time
+
+cases = [
+    "case118zh",      # 118 buses
+    "case1354pegase", # 1,354 buses
+    "case2869pegase", # 2,869 buses
+    "case9241pegase", # 9,241 buses (download first)
+]
+
+for name in cases:
+    case = pcase.load(name)
+    start = time.time()
+    # ... run power flow
+    print(f"{name}: {time.time() - start:.2f}s")
+```
+
+**Using your own data alongside built-in cases:**
+
+```python
+import powerfulcases as pcase
+
+# Built-in case for validation
+ieee14 = pcase.load("ieee14")
+
+# Your proprietary data with same API
+utility = pcase.load("/projects/utility-data/summer-peak")
+
+# Same workflow for both
+for case in [ieee14, utility]:
+    # ... run analysis
+```
 
 ## Command-Line Interface (Python)
 
@@ -251,19 +447,6 @@ Short names for common formats:
 |-------|---------------|-------------|
 | `:raw` | `'raw'` | `psse_raw` |
 | `:dyr` | `'dyr'` | `psse_dyr` |
-
-## Legacy API
-
-The old function-based API still works but emits deprecation warnings:
-
-```julia
-# Old (deprecated)
-using PowerfulCases
-case = ieee14()
-
-# New (recommended)
-case = load("ieee14")
-```
 
 ## License
 
