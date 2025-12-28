@@ -47,4 +47,16 @@ variant = "gentpj1_highsat"
 
 [[files]]
 path = "ieee14.xlsx"
-format = "xlsx"
+format = "andes"
+
+[[files]]
+path = "ieee14_fault.raw"
+format = "psse_raw"
+format_version = "33"
+variant = "fault"
+
+[[files]]
+path = "ieee14_island.raw"
+format = "psse_raw"
+format_version = "33"
+variant = "island"

@@ -21,3 +21,15 @@ path = "ieee39.raw"
 format = "psse_raw"
 format_version = "33"
 default = true
+
+[[files]]
+path = "ieee39_nopq31.raw"
+format = "psse_raw"
+format_version = "33"
+variant = "nopq31"
+
+[[files]]
+path = "ieee39_rt.raw"
+format = "psse_raw"
+format_version = "33"
+variant = "rt"
