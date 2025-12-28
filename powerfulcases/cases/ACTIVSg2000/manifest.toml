@@ -1,5 +1,23 @@
 name = "ACTIVSg2000"
-description = "ACTIVS 2000-bus synthetic case"
+description = "ACTIVS 2000-bus synthetic grid on footprint of Texas"
+
+[credits]
+license = "CC0-1.0"
+authors = [
+    "A. B. Birchfield",
+    "T. Xu",
+    "K. M. Gegner",
+    "K. S. Shetye",
+    "T. J. Overbye",
+]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "A. B. Birchfield, T. Xu, K. M. Gegner, K. S. Shetye, T. J. Overbye, 'Grid Structural Characteristics as Validation Criteria for Synthetic Networks,' IEEE Transactions on Power Systems, vol. 32, no. 4, pp. 3258-3265, July 2017"
+
+[[credits.citations]]
+text = "Electric Grid Test Case Repository, Texas A&M University"
+url = "https://electricgrids.engr.tamu.edu/electric-grid-test-cases/activsg2000/"
 
 [[files]]
 path = "ACTIVSg2000.raw"
@@ -17,3 +35,14 @@ variant = "fixed_zx"
 path = "ACTIVSg2000.dyr"
 format = "psse_dyr"
 default = true
+
+[[files]]
+path = "ACTIVSg2000_singlegen.raw"
+format = "psse_raw"
+format_version = "33"
+variant = "singlegen"
+
+[[files]]
+path = "ACTIVSg2000_singlegen.dyr"
+format = "psse_dyr"
+variant = "singlegen"

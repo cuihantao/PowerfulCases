@@ -1,6 +1,11 @@
 name = "two_bus_transformer"
 description = "Two-bus system with transformer for testing"
 
+[credits]
+license = "CC0-1.0"
+authors = ["PowerfulCases Contributors"]
+maintainers = ["PowerfulCases Contributors"]
+
 [[files]]
 path = "two_bus_transformer.raw"
 format = "psse_raw"

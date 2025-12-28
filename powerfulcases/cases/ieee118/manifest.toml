@@ -1,6 +1,15 @@
 name = "ieee118"
 description = "IEEE 118-bus test system"
 
+[credits]
+license = "CC0-1.0"
+authors = ["American Electric Power (original data, 1962)", "Rich Christie (IEEE Common Format conversion, 1993)"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "Power Systems Test Case Archive, University of Washington"
+url = "https://labs.ece.uw.edu/pstca/pf118/pg_tca118bus.htm"
+
 [[files]]
 path = "ieee118.raw"
 format = "psse_raw"

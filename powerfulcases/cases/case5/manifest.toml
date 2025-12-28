@@ -1,5 +1,13 @@
 name = "case5"
-description = "5-bus test case"
+description = "Modified PJM 5-bus test system"
+
+[credits]
+license = "CC0-1.0"
+authors = ["F. Li", "R. Bo"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "F. Li, R. Bo, 'Small Test Systems for Power System Economic Studies,' Proceedings of the 2010 IEEE Power & Energy Society General Meeting"
 
 [[files]]
 path = "case5.raw"

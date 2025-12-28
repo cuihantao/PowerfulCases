@@ -532,8 +532,8 @@ function __init__()
 end
 
 # Pre-generate for known cases at compile time
-for name in [:ieee14, :ieee39, :ieee118, :ACTIVSg2000, :ACTIVSg2000_singlegen,
-             :ACTIVSg10k, :ACTIVSg70k, :ACTIVSg70k_singlegen,
+for name in [:ieee14, :ieee39, :ieee118, :ACTIVSg2000,
+             :ACTIVSg10k, :ACTIVSg70k,
              :case5, :case9, :npcc, :two_bus_branch, :two_bus_transformer,
              :ieee14_fault, :ieee14_island, :ieee39_nopq31, :ieee39_rt]
     name_str = string(name)

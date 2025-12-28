@@ -1,6 +1,11 @@
 name = "two_bus_branch"
 description = "Two-bus system with branch for testing"
 
+[credits]
+license = "CC0-1.0"
+authors = ["PowerfulCases Contributors"]
+maintainers = ["PowerfulCases Contributors"]
+
 [[files]]
 path = "two_bus_branch.raw"
 format = "psse_raw"

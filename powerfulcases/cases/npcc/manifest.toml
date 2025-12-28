@@ -1,5 +1,13 @@
 name = "npcc"
-description = "NPCC (Northeast Power Coordinating Council) test system"
+description = "NPCC 140-bus (Northeast Power Coordinating Council) test system"
+
+[credits]
+license = "CC0-1.0"
+authors = ["Power System Toolbox (PST) Contributors"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "NPCC 140-Bus System, Power System Toolbox (PST)"
 
 [[files]]
 path = "npcc.raw"

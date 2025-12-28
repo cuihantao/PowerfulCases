@@ -1,5 +1,23 @@
 name = "ACTIVSg10k"
-description = "ACTIVS 10,000-bus synthetic case"
+description = "ACTIVS 10,000-bus synthetic grid on footprint of Western United States"
+
+[credits]
+license = "CC0-1.0"
+authors = [
+    "A. B. Birchfield",
+    "T. Xu",
+    "K. M. Gegner",
+    "K. S. Shetye",
+    "T. J. Overbye",
+]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "A. B. Birchfield, T. Xu, K. M. Gegner, K. S. Shetye, T. J. Overbye, 'Grid Structural Characteristics as Validation Criteria for Synthetic Networks,' IEEE Transactions on Power Systems, vol. 32, no. 4, pp. 3258-3265, July 2017"
+
+[[credits.citations]]
+text = "Electric Grid Test Case Repository, Texas A&M University"
+url = "https://electricgrids.engr.tamu.edu/electric-grid-test-cases/activsg10k/"
 
 [[files]]
 path = "ACTIVSg10k.raw"

@@ -21,8 +21,6 @@ base_url = "https://raw.githubusercontent.com/cuihantao/PowerfulCases/main/power
 # when installed via pip.
 remote_cases = [
     "ACTIVSg2000",
-    "ACTIVSg2000_singlegen",
     "ACTIVSg10k",
     "ACTIVSg70k",
-    "ACTIVSg70k_singlegen",
 ]

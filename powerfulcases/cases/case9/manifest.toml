@@ -1,5 +1,13 @@
 name = "case9"
-description = "9-bus test case"
+description = "WSCC 9-bus test system (Western System Coordinating Council)"
+
+[credits]
+license = "CC0-1.0"
+authors = ["P. M. Anderson", "A. A. Fouad"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "P. M. Anderson, A. A. Fouad, 'Power System Control and Stability,' 2nd ed., IEEE Press, 2003"
 
 [[files]]
 path = "case9.raw"

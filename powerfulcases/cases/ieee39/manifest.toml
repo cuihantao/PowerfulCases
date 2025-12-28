@@ -1,6 +1,21 @@
 name = "ieee39"
 description = "IEEE 39-bus (New England) test system"
 
+[credits]
+license = "CC0-1.0"
+authors = [
+    "T. Athay",
+    "R. Podmore",
+    "S. Virmani",
+]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "T. Athay, R. Podmore, S. Virmani, 'A Practical Method for the Direct Analysis of Transient Stability,' IEEE Transactions on Power Apparatus and Systems, vol. PAS-98, no. 2, pp. 573-584, March/April 1979"
+
+[[credits.citations]]
+text = "M. A. Pai, 'Energy Function Analysis for Power System Stability,' Boston: Kluwer Academic Publishers, 1989"
+
 [[files]]
 path = "ieee39.raw"
 format = "psse_raw"

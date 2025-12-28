@@ -1,6 +1,18 @@
 name = "ieee39_nopq31"
 description = "IEEE 39-bus test system without PQ load at bus 31"
 
+[credits]
+license = "CC0-1.0"
+authors = [
+    "T. Athay",
+    "R. Podmore",
+    "S. Virmani",
+]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "T. Athay, R. Podmore, S. Virmani, 'A Practical Method for the Direct Analysis of Transient Stability,' IEEE Transactions on Power Apparatus and Systems, vol. PAS-98, no. 2, pp. 573-584, March/April 1979"
+
 [[files]]
 path = "ieee39_nopq31.raw"
 format = "psse_raw"
