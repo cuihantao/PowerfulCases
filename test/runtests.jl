@@ -55,11 +55,11 @@ using Downloads
         @test default_path == dyr_path
 
         # Required=false for missing format
-        missing = file(case, :matpower, required=false)
+        missing = file(case, :psat, required=false)
         @test missing === nothing
 
         # Required=true (default) for missing format throws error
-        @test_throws ErrorException file(case, :matpower)
+        @test_throws ErrorException file(case, :psat)
 
         # Missing variant throws error
         @test_throws ErrorException file(case, :dyr, variant="nonexistent_variant")

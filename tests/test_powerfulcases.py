@@ -100,17 +100,17 @@ class TestGetFile:
     def test_file_not_required(self):
         """Test required=False returns None for missing format."""
         case = load("ieee14")
-        result = file(case, "matpower", required=False)
+        result = file(case, "psat", required=False)
         assert result is None
 
     def test_file_missing_required(self):
         """Test error when required file is missing."""
         case = load("ieee14")
         try:
-            file(case, "matpower")
+            file(case, "psat")
             assert False, "Should have raised FileNotFoundError"
         except FileNotFoundError as e:
-            assert "matpower" in str(e)
+            assert "psat" in str(e)
 
     def test_file_missing_variant(self):
         """Test error when variant doesn't exist."""
