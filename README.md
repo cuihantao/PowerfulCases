@@ -1,6 +1,6 @@
 # PowerfulCases
 
-Test case data management for power systems simulation. Works with both Julia and Python.
+Test case data management for power systems simulation. Works with Julia, Python, and MATLAB.
 
 ## Installation
 
@@ -13,6 +13,12 @@ Pkg.add(url="https://github.com/cuihantao/PowerfulCases")
 **Python:**
 ```bash
 pip install powerfulcases
+```
+
+**MATLAB:**
+```matlab
+% Clone the repo, then run:
+pcase_install
 ```
 
 ## Your Data, Your Way
@@ -35,6 +41,13 @@ import powerfulcases as pcase
 case = pcase.load("/projects/utility-data/summer-peak-2024")
 case.raw   # → /projects/utility-data/summer-peak-2024/model.raw
 case.dyr   # → /projects/utility-data/summer-peak-2024/dynamics.dyr
+```
+
+```matlab
+% MATLAB
+case = pcase.load('/projects/utility-data/summer-peak-2024');
+case.raw   % → /projects/utility-data/summer-peak-2024/model.raw
+case.dyr   % → /projects/utility-data/summer-peak-2024/dynamics.dyr
 ```
 
 No configuration needed for standard extensions. For advanced use cases (multiple DYR variants, format versions), add a `manifest.toml`:
@@ -76,6 +89,18 @@ pcase.file(case, "psse_dyr", variant="genrou")
 pcase.cases()
 pcase.formats(case)
 pcase.variants(case, "psse_dyr")
+```
+
+```matlab
+% MATLAB
+case = pcase.load('ieee14');
+case.raw
+case.dyr
+pcase.file(case, 'psse_dyr', 'variant', 'genrou')
+
+pcase.cases()
+pcase.formats(case)
+pcase.variants(case, 'psse_dyr')
 ```
 
 ### Available Cases
@@ -194,6 +219,22 @@ clear()                   # Clear everything
 set_cache_dir("/custom/path")   # Change cache location
 ```
 
+```python
+# Python
+import powerfulcases as pcase
+
+pcase.download("ACTIVSg70k")
+pcase.info()
+pcase.clear("ACTIVSg70k")
+```
+
+```matlab
+% MATLAB
+pcase.download('ACTIVSg70k')
+pcase.info()
+pcase.clear('ACTIVSg70k')
+```
+
 ```bash
 # Python CLI
 pcase download ACTIVSg70k
@@ -206,10 +247,10 @@ pcase clear-cache --all
 
 Short names for common formats:
 
-| Alias | Full Format |
-|-------|-------------|
-| `:raw` / `"raw"` | `:psse_raw` / `"psse_raw"` |
-| `:dyr` / `"dyr"` | `:psse_dyr` / `"psse_dyr"` |
+| Julia | Python/MATLAB | Full Format |
+|-------|---------------|-------------|
+| `:raw` | `'raw'` | `psse_raw` |
+| `:dyr` | `'dyr'` | `psse_dyr` |
 
 ## Legacy API
 
