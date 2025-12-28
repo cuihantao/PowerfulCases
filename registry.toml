@@ -23,4 +23,10 @@ remote_cases = [
     "ACTIVSg2000",
     "ACTIVSg10k",
     "ACTIVSg70k",
+    # MATPOWER format cases
+    "case_ACTIVSg10k",
+    "case_ACTIVSg25k",
+    "case_ACTIVSg70k",
+    "case_SyntheticUSA",
+    "case13659pegase",
 ]
