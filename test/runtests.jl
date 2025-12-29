@@ -16,8 +16,8 @@ using Downloads
         end
 
         @testset "load with local directory" begin
-            # Use ieee14 directory as a local path test
-            cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee14")
+            # Use ieee14 directory as a local path test (now in ieee-transmission collection)
+            cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee-transmission", "ieee14")
             case = load(cases_dir)
             @test case.name == "ieee14"
             @test isfile(case.raw)
@@ -64,8 +64,8 @@ using Downloads
         # Missing variant throws error
         @test_throws ErrorException file(case, :dyr, variant="nonexistent_variant")
 
-        # RAW variant (singlegen) for ACTIVSg2000
-        case2000 = load("ACTIVSg2000")
+        # RAW variant (singlegen) for ACTIVSg2000 (use explicit collection path to avoid ambiguity)
+        case2000 = load("synthetic/ACTIVSg2000")
         singlegen_raw = file(case2000, :raw, variant="singlegen")
         @test isfile(singlegen_raw)
         @test occursin("singlegen", singlegen_raw)
@@ -134,7 +134,7 @@ using Downloads
     @testset "Manifest parsing" begin
         using PowerfulCases: parse_manifest, Manifest, FileEntry
 
-        cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee14")
+        cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee-transmission", "ieee14")
         manifest_path = joinpath(cases_dir, "manifest.toml")
 
         manifest = parse_manifest(manifest_path)
@@ -635,7 +635,7 @@ remote_cases = ["case1", "case2", "case3"]
         @test entry.path == "default.dyr"
 
         # Test load with absolute path
-        cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee14")
+        cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee-transmission", "ieee14")
         abs_path = abspath(cases_dir)
         case = load(abs_path)
         @test case.name == "ieee14"
@@ -643,7 +643,7 @@ remote_cases = ["case1", "case2", "case3"]
 
     @testset "Manifest paths" begin
         # Test parse_manifest with String (not just joinpath)
-        cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee14")
+        cases_dir = joinpath(@__DIR__, "..", "powerfulcases", "cases", "ieee-transmission", "ieee14")
         manifest_path = string(joinpath(cases_dir, "manifest.toml"))
         manifest = parse_manifest(manifest_path)
         @test manifest.name == "ieee14"

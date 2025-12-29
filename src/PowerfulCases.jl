@@ -212,13 +212,20 @@ function load(name_or_path::AbstractString)
         return _load_local_case(name_or_path)
     end
 
-    # 2. Check if it's a collection/case path
+    # 2. Check if it's an absolute path that doesn't exist
+    if isabspath(name_or_path)
+        error("Directory not found: $name_or_path")
+    end
+
+    # 3. Check if it's a collection/case path (relative path with /)
     if occursin("/", name_or_path)
         parts = split(name_or_path, "/")
 
-        # Validate each path component for security
+        # Validate each path component for security (skip empty parts from split)
         for part in parts
-            _validate_path_component(part)
+            if !isempty(part)
+                _validate_path_component(part)
+            end
         end
 
         bundled_dir = joinpath(CASES_DIR, parts...)
@@ -234,7 +241,7 @@ function load(name_or_path::AbstractString)
         end
     end
 
-    # 3. Collect ALL matches from both bundled and remote sources
+    # 4. Collect ALL matches from both bundled and remote sources
     matches = []  # List of (source_type, collection, location) tuples
 
     # Bundled matches
@@ -835,27 +842,27 @@ function path(filename::String)
         "PowerfulCases.path() is deprecated. Use load(\"casename\").raw instead.",
         :path
     )
-    # Support old flat structure for backwards compatibility
-    parts = split(filename, '/')
-    if length(parts) == 1
-        name = replace(filename, r"\.(raw|dyr)$" => "")
-        bundle_path = joinpath(CASES_DIR, name, filename)
-        if isfile(bundle_path)
-            return bundle_path
-        end
-    elseif length(parts) == 2 && parts[1] == "dyr"
-        dyr_file = parts[2]
-        name = replace(dyr_file, r"\.dyr$" => "")
-        base_name = split(name, "_")[1]
-        bundle_path = joinpath(CASES_DIR, base_name, dyr_file)
-        if isfile(bundle_path)
-            return bundle_path
-        end
-    end
+    # Try to extract case name and use new load() API
+    name = replace(filename, r"\.(raw|dyr)$" => "")
 
-    full_path = joinpath(CASES_DIR, filename)
-    if isfile(full_path)
-        return full_path
+    try
+        # Try loading with new API (searches all collections)
+        case = load(name)
+
+        # Check if it's a .raw or .dyr file
+        if endswith(filename, ".raw")
+            return case.raw
+        elseif endswith(filename, ".dyr")
+            return case.dyr
+        else
+            # Try to find the file in the case directory
+            file_path = joinpath(case.dir, filename)
+            if isfile(file_path)
+                return file_path
+            end
+        end
+    catch
+        # Fall through to error
     end
 
     error("Case file not found: $filename. Use load() to access cases.")
