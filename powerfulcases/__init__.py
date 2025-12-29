@@ -38,6 +38,7 @@ from .cases import (
     formats,
     variants,
     manifest,
+    export,
 )
 from .cache import (
     get_cache_dir,
@@ -59,6 +60,7 @@ __all__ = [
     "cases",
     "formats",
     "variants",
+    "export",
     # Manifest
     "manifest",
     # Cache

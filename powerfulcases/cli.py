@@ -52,6 +52,35 @@ def download(name: str, force: bool):
         raise SystemExit(1)
 
 
+@cli.command("export")
+@click.argument("name")
+@click.argument("dest", type=click.Path(file_okay=False, path_type=Path))
+@click.option("--overwrite", "-f", is_flag=True, help="Overwrite existing directory")
+def export_case(name: str, dest: Path, overwrite: bool):
+    """Export a case bundle to a local directory.
+
+    NAME is the case name (e.g., 'ieee14')
+    DEST is the destination directory (case will be copied to DEST/NAME/)
+
+    Examples:
+        pcase export ieee14 .
+        pcase export ieee14 ./my-project/cases
+        pcase export ieee14 . --overwrite
+    """
+    from .cases import export as _export
+
+    try:
+        result_dir = _export(name, str(dest), overwrite=overwrite)
+        # Success message already printed by export function
+    except FileExistsError as e:
+        click.echo(f"Error: {e}", err=True)
+        click.echo("Use --overwrite to replace existing directory", err=True)
+        raise SystemExit(1)
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        raise SystemExit(1)
+
+
 @cli.command("list")
 @click.option("--remote", "-r", is_flag=True, help="Show only remote cases")
 @click.option("--cached", "-c", is_flag=True, help="Show only cached cases")

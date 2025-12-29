@@ -55,6 +55,9 @@ from .registry import (
 # Cases directory is inside the package for proper wheel distribution
 CASES_DIR = Path(__file__).parent / "cases"
 
+# Progress reporting threshold for export operations (100 MB)
+PROGRESS_THRESHOLD_BYTES = 100 * 1024 * 1024
+
 
 class FileInfo(NamedTuple):
     """Information about a file in a case bundle."""
@@ -388,6 +391,95 @@ def cases() -> List[str]:
         result.add(name)
 
     return sorted(result)
+
+
+# ============================================================================
+# Export API
+# ============================================================================
+
+def export(case_name: str, dest: str, overwrite: bool = False) -> str:
+    """
+    Export a case bundle to a local directory.
+
+    The case will be copied to dest/case_name/ as a subdirectory. All files in the case
+    directory are included (RAW, DYR variants, manifest, etc.).
+
+    Args:
+        case_name: Name of case (e.g., "ieee14") or path to local directory
+        dest: Destination directory (case will be copied to dest/case_name/)
+        overwrite: Allow overwriting existing directory (default: False)
+
+    Returns:
+        Path to exported directory
+
+    Examples:
+        >>> export("ieee14", ".")
+        './ieee14'
+
+        >>> export("ACTIVSg70k", "./cases")
+        './cases/ACTIVSg70k'
+
+        >>> export("ieee14", ".", overwrite=True)
+        './ieee14'
+
+    Notes:
+        - Bundled cases: copied from package installation
+        - Remote cases: downloaded to cache first, then copied
+        - Local directories: copied recursively
+        - All files in the case directory are included (symlinks are followed)
+        - manifest.toml is always copied if it exists
+        - Progress is shown for files larger than 100 MB
+        - Files are copied preserving directory structure; no path traversal outside destination
+    """
+    import shutil
+    import os
+
+    # Load the case (triggers download if needed for remote cases)
+    case = load(case_name)
+
+    # Determine destination: dest/case_name/
+    dest_path = Path(dest).absolute()
+    dest_dir = dest_path / case.name
+
+    # Check if destination exists
+    if dest_dir.exists() and not overwrite:
+        raise FileExistsError(
+            f"Directory exists: {dest_dir}\n"
+            f"Use overwrite=True to replace existing directory"
+        )
+
+    # Calculate total size for progress reporting
+    total_size = 0
+    file_list = []
+    case_path = Path(case.dir)
+
+    for root, _, files in os.walk(case_path):
+        for file in files:
+            filepath = Path(root) / file
+            file_list.append(filepath)
+            total_size += filepath.stat().st_size
+
+    # Show progress if size exceeds threshold
+    show_progress = total_size > PROGRESS_THRESHOLD_BYTES
+
+    if show_progress:
+        size_mb = round(total_size / 1024 / 1024, 2)
+        print(f"Exporting {case.name} ({size_mb} MB)...")
+
+    # Remove existing directory if overwrite is True
+    if dest_dir.exists() and overwrite:
+        shutil.rmtree(dest_dir)
+
+    # Copy the entire directory
+    shutil.copytree(case_path, dest_dir)
+
+    # Report success
+    num_files = len(file_list)
+    size_mb = round(total_size / 1024 / 1024, 2)
+    print(f"Exported {case.name} → {dest_dir}")
+    print(f"Copied {num_files} files ({size_mb} MB)")
+
+    return str(dest_dir)
 
 
 # ============================================================================

@@ -51,11 +51,15 @@ include("registry.jl")
 export load, file, cases, list_files, formats, variants
 export manifest
 export download, clear, set_cache_dir, info
+export export  # Export cases to local directory
 export CaseBundle, Manifest, FileEntry, Credits, Citation
 export get_credits, get_license, get_authors, get_maintainers, get_citations, has_credits
 
 
 const CASES_DIR = joinpath(@__DIR__, "..", "powerfulcases", "cases")
+
+# Progress reporting threshold for export operations
+const PROGRESS_THRESHOLD_BYTES = 100 * 1024 * 1024  # 100 MB
 
 """
     CaseBundle
@@ -430,6 +434,97 @@ function cases()
     end
 
     sort(collect(result))
+end
+
+# ============================================================================
+# Export API
+# ============================================================================
+
+"""
+    export(case_name::AbstractString, dest::AbstractString; overwrite::Bool=false) -> String
+
+Export a case bundle to a local directory.
+
+The case will be copied to `dest/case_name/` as a subdirectory. All files in the case
+directory are included (RAW, DYR variants, manifest, etc.).
+
+# Arguments
+- `case_name`: Name of case (e.g., "ieee14") or path to local directory
+- `dest`: Destination directory (case will be copied to `dest/case_name/`)
+- `overwrite`: Allow overwriting existing directory (default: false)
+
+# Returns
+- Path to exported directory
+
+# Examples
+```julia
+# Export bundled case to current directory
+export("ieee14", ".")              # → ./ieee14/
+
+# Export remote case (downloads first if needed)
+export("ACTIVSg70k", "./cases")    # → ./cases/ACTIVSg70k/
+
+# Export with overwrite
+export("ieee14", "."; overwrite=true)
+
+# Export local directory (copies it)
+export("/path/to/my-case", "./backup")
+```
+
+# Notes
+- Bundled cases: copied from package installation
+- Remote cases: downloaded to cache first, then copied
+- Local directories: copied recursively
+- All files in the case directory are included (symlinks are followed)
+- manifest.toml is always copied if it exists
+- Progress is shown for files larger than 100 MB
+- Files are copied preserving directory structure; no path traversal outside destination
+"""
+function Base.export(case_name::AbstractString, dest::AbstractString; overwrite::Bool=false)
+    # Load the case (triggers download if needed for remote cases)
+    case = load(case_name)
+
+    # Determine destination: dest/case_name/
+    dest_dir = joinpath(abspath(dest), case.name)
+
+    # Check if destination exists
+    if isdir(dest_dir) && !overwrite
+        error("Directory exists: $dest_dir\nUse overwrite=true to replace existing directory")
+    end
+
+    # Calculate total size for progress reporting
+    total_size = 0
+    file_list = String[]
+    for (root, _, files) in walkdir(case.dir)
+        for file in files
+            filepath = joinpath(root, file)
+            push!(file_list, filepath)
+            total_size += filesize(filepath)
+        end
+    end
+
+    # Show progress if size exceeds threshold
+    show_progress = total_size > PROGRESS_THRESHOLD_BYTES
+
+    if show_progress
+        @info "Exporting $(case.name) ($(round(total_size / 1024 / 1024; digits=2)) MB)..."
+    end
+
+    # Remove existing directory if overwrite is true
+    if isdir(dest_dir) && overwrite
+        rm(dest_dir; recursive=true)
+    end
+
+    # Copy the entire directory
+    cp(case.dir, dest_dir; force=overwrite)
+
+    # Count files
+    num_files = length(file_list)
+    size_mb = round(total_size / 1024 / 1024; digits=2)
+
+    @info "Exported $(case.name) → $dest_dir\nCopied $num_files files ($(size_mb) MB)"
+
+    dest_dir
 end
 
 # ============================================================================

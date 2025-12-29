@@ -312,6 +312,88 @@ for case in [ieee14, utility]:
     # ... run analysis
 ```
 
+## Working with Local Copies
+
+Power system engineers often need to modify case files locally. Use `export` to copy a case to your working directory:
+
+### Exporting Cases
+
+**Julia:**
+```julia
+using PowerfulCases
+
+# Export to current directory
+export("ieee14", ".")                    # → ./ieee14/
+
+# Export to project directory
+export("ieee14", "./my-project/cases")   # → ./my-project/cases/ieee14/
+
+# Overwrite existing
+export("ieee14", ".", overwrite=true)
+```
+
+**Python:**
+```python
+import powerfulcases as pcase
+
+# Export to current directory
+pcase.export("ieee14", ".")              # → ./ieee14/
+
+# Export to project directory
+pcase.export("ieee14", "./my-project/cases")
+
+# Overwrite existing
+pcase.export("ieee14", ".", overwrite=True)
+```
+
+**Python CLI:**
+```bash
+# Export to current directory
+pcase export ieee14 .
+
+# Export to project directory
+pcase export ieee14 ./my-project/cases
+
+# Overwrite existing
+pcase export ieee14 . --overwrite
+```
+
+### Typical Workflow
+
+```bash
+# 1. Export a test case to your project
+pcase export ieee14 ./my-project
+
+# 2. Modify the files locally
+# Edit ./my-project/ieee14/ieee14.raw (change loads, add generators, etc.)
+
+# 3. Use the modified version in your simulation
+```
+
+```julia
+# Julia
+using Powerful
+using PowerFlowData
+
+# Load your modified case
+case = PowerFlowData.parse_network("./my-project/ieee14/ieee14.raw")
+sys = SystemModel(case)
+solve(ACPowerFlowProblem(sys), Newton())
+```
+
+```python
+# Python with ANDES
+import andes
+ss = andes.load("./my-project/ieee14/ieee14.raw")
+ss.PFlow.run()
+```
+
+**Benefits of exported cases:**
+- Full control: modify any parameter
+- Version control: track changes with Git
+- Reproducibility: case files live with your analysis code
+- Offline work: no network dependency after export
+
 ## Command-Line Interface (Python)
 
 The `pcase` CLI helps manage cases and cache:
@@ -319,6 +401,10 @@ The `pcase` CLI helps manage cases and cache:
 ```bash
 # List all available cases
 pcase list
+
+# Export a case to local directory
+pcase export ieee14 .
+pcase export ieee14 ./my-project --overwrite
 
 # Pre-download large cases before running benchmarks
 pcase download ACTIVSg70k

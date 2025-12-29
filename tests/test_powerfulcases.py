@@ -18,6 +18,7 @@ from powerfulcases import (
     manifest,
     get_cache_dir,
     info,
+    export,
     # Legacy API
     ieee14,
 )
@@ -1478,6 +1479,204 @@ default = true
             assert "DOI: 10.1234/cli" in result.output
 
 
+class TestExport:
+    """Tests for export() function."""
+
+    def test_export_bundled_case(self):
+        """Test exporting a bundled case to a directory."""
+        import shutil
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Export ieee14 to temp directory
+            result = export("ieee14", tmpdir)
+
+            # Check destination structure
+            dest_dir = Path(tmpdir) / "ieee14"
+            assert dest_dir.exists()
+            assert dest_dir.is_dir()
+            assert str(dest_dir) == result
+
+            # Check files were copied
+            assert (dest_dir / "ieee14.raw").exists()
+            assert (dest_dir / "manifest.toml").exists()
+
+            # Check DYR variants were copied
+            assert (dest_dir / "ieee14.dyr").exists()
+            assert (dest_dir / "ieee14_genrou.dyr").exists()
+
+    def test_export_to_current_directory(self):
+        """Test exporting to current directory."""
+        import shutil
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Change to temp directory
+            old_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+
+                # Export to current directory
+                result = export("case5", ".")
+
+                # Should create ./case5/ subdirectory
+                dest_dir = Path.cwd() / "case5"
+                assert dest_dir.exists()
+                assert (dest_dir / "case5.raw").exists()
+
+            finally:
+                os.chdir(old_cwd)
+
+    def test_export_error_if_exists(self):
+        """Test error when destination already exists."""
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Export once
+            export("case9", tmpdir)
+
+            # Try to export again without overwrite
+            try:
+                export("case9", tmpdir)
+                assert False, "Should have raised FileExistsError"
+            except FileExistsError as e:
+                assert "Directory exists" in str(e)
+                assert "overwrite" in str(e).lower()
+
+    def test_export_with_overwrite(self):
+        """Test exporting with overwrite flag."""
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dest_dir = Path(tmpdir) / "npcc"
+
+            # Export once
+            export("npcc", tmpdir)
+            assert dest_dir.exists()
+
+            # Modify a file to test overwrite
+            test_file = dest_dir / "npcc.raw"
+            original_content = test_file.read_text()
+            test_file.write_text("MODIFIED CONTENT")
+            assert test_file.read_text() == "MODIFIED CONTENT"
+
+            # Export again with overwrite
+            export("npcc", tmpdir, overwrite=True)
+
+            # Content should be restored
+            assert test_file.read_text() == original_content
+
+    def test_export_local_directory(self):
+        """Test exporting a local directory (copy operation)."""
+        from pathlib import Path
+        from powerfulcases.manifest import Manifest, FileEntry, write_manifest
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a local case
+            source_dir = Path(tmpdir) / "my_case"
+            source_dir.mkdir()
+            (source_dir / "test.raw").write_text("TEST RAW DATA")
+            manifest = Manifest(
+                name="my_case",
+                files=[FileEntry(path="test.raw", format="psse_raw", default=True)],
+            )
+            write_manifest(manifest, source_dir / "manifest.toml")
+
+            # Export to another location
+            dest_parent = Path(tmpdir) / "exported"
+            dest_parent.mkdir()
+            result = export(str(source_dir), str(dest_parent))
+
+            # Check files were copied
+            dest_dir = dest_parent / "my_case"
+            assert dest_dir.exists()
+            assert (dest_dir / "test.raw").exists()
+            assert (dest_dir / "test.raw").read_text() == "TEST RAW DATA"
+            assert (dest_dir / "manifest.toml").exists()
+
+    def test_export_cli(self):
+        """Test export via CLI."""
+        from click.testing import CliRunner
+        from powerfulcases.cli import cli
+        from pathlib import Path
+
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Run export command
+            result = runner.invoke(cli, ["export", "ieee14", tmpdir])
+
+            # Check success
+            assert result.exit_code == 0
+            assert "Exported ieee14" in result.output
+            assert "Copied" in result.output
+
+            # Check files
+            dest_dir = Path(tmpdir) / "ieee14"
+            assert dest_dir.exists()
+            assert (dest_dir / "ieee14.raw").exists()
+
+    def test_export_cli_overwrite(self):
+        """Test export CLI with overwrite flag."""
+        from click.testing import CliRunner
+        from powerfulcases.cli import cli
+        from pathlib import Path
+
+        runner = CliRunner()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Export once
+            result1 = runner.invoke(cli, ["export", "case5", tmpdir])
+            assert result1.exit_code == 0
+
+            # Try again without --overwrite (should fail)
+            result2 = runner.invoke(cli, ["export", "case5", tmpdir])
+            assert result2.exit_code == 1
+            assert "Error" in result2.output
+
+            # Try with --overwrite (should succeed)
+            result3 = runner.invoke(cli, ["export", "case5", tmpdir, "--overwrite"])
+            assert result3.exit_code == 0
+
+    def test_export_preserves_all_files(self):
+        """Test that export copies all files including variants."""
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Export ieee14 which has multiple DYR variants
+            export("ieee14", tmpdir)
+
+            dest_dir = Path(tmpdir) / "ieee14"
+            source_case = load("ieee14")
+            source_dir = Path(source_case.dir)
+
+            # Count files in source and destination
+            source_files = set(f.name for f in source_dir.iterdir() if f.is_file())
+            dest_files = set(f.name for f in dest_dir.iterdir() if f.is_file())
+
+            # All files should be copied
+            assert source_files == dest_files
+
+    def test_export_can_load_exported(self):
+        """Test that exported cases can be loaded again."""
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Export case (use ieee14 which has DYR files)
+            export("ieee14", tmpdir)
+
+            # Load the exported case
+            dest_dir = Path(tmpdir) / "ieee14"
+            exported_case = load(str(dest_dir))
+
+            # Should work the same as original
+            assert exported_case.name == "ieee14"
+            assert os.path.isfile(exported_case.raw)
+            assert exported_case.dyr is not None
+
+            # Can access files
+            raw_path = file(exported_case, "psse_raw")
+            assert os.path.isfile(raw_path)
+
+
 def run_all_tests():
     """Run all tests manually."""
     test_classes = [
@@ -1498,6 +1697,7 @@ def run_all_tests():
         TestManifestPaths,
         TestIncludesField,
         TestCredits,
+        TestExport,
     ]
 
     for test_class in test_classes:
