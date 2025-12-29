@@ -494,6 +494,7 @@ remote_cases = ["case1", "case2", "case3"]
             try
                 mktempdir() do dir
                     set_cache_dir(dir)
+                    # NOTE: case_name is the full registry path "collection/case" - manifest.name stores only "case"
                     case_name = registry.remote_cases[1]
 
                     # Download the remote case
@@ -507,7 +508,9 @@ remote_cases = ["case1", "case2", "case3"]
 
                     # Parse manifest and verify files were downloaded
                     manifest = parse_manifest(joinpath(case_dir, "manifest.toml"))
-                    @test manifest.name == case_name
+                    # Extract case name from "collection/case" format
+                    case_name_only = contains(case_name, "/") ? split(case_name, "/")[end] : case_name
+                    @test manifest.name == case_name_only
                     @test !isempty(manifest.files)
 
                     # Check at least the first file exists

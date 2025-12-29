@@ -693,6 +693,7 @@ class TestDownloadErrorHandling:
                 set_cache_dir(cache_dir)
 
                 # Download a known remote case
+                # NOTE: case_name is the full registry path "collection/case" - manifest.name stores only "case"
                 case_name = registry.remote_cases[0]
                 result = download(case_name, force=True)
                 case_dir = cache_dir / case_name
@@ -704,7 +705,9 @@ class TestDownloadErrorHandling:
 
                 # Parse manifest and verify files were downloaded
                 manifest = parse_manifest(case_dir / "manifest.toml")
-                assert manifest.name == case_name
+                # Extract case name from "collection/case" format
+                expected_name = case_name.split("/")[-1] if "/" in case_name else case_name
+                assert manifest.name == expected_name
                 assert len(manifest.files) > 0, "Manifest should have files"
 
                 # Check at least the first file exists
