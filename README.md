@@ -23,7 +23,7 @@ pcase_install
 
 ## Your Data, Your Way
 
-**PowerfulCases works with your proprietary case files.** Point it at any directory containing `.raw`, `.dyr`, or other power system data files:
+**PowerfulCases works with your proprietary case files.** Point it at any directory containing `.raw`, `.dyr`, `.dss` (OpenDSS), or other power system data files:
 
 ```julia
 # Julia
@@ -571,6 +571,82 @@ Short names for common formats:
 |-------|---------------|-------------|
 | `:raw` | `'raw'` | `psse_raw` |
 | `:dyr` | `'dyr'` | `psse_dyr` |
+| `:dss` | `'dss'` | `opendss` |
+
+## OpenDSS Integration
+
+PowerfulCases includes standard IEEE distribution test feeders in OpenDSS format:
+
+- `ieee13_opendss` - IEEE 13-bus test feeder
+- `ieee34_opendss` - IEEE 34-bus test feeder
+- `ieee37_opendss` - IEEE 37-bus test feeder
+- `ieee123_opendss` - IEEE 123-bus test feeder
+- `ieee8500_opendss` - IEEE 8500-node test feeder
+
+### Python with OpenDSSDirect.py
+
+Use PowerfulCases with [OpenDSSDirect.py](https://github.com/dss-extensions/OpenDSSDirect.py) for distribution system simulation:
+
+```bash
+pip install powerfulcases opendssdirect.py
+```
+
+```python
+import powerfulcases as pcase
+from opendssdirect import dss
+
+# Load the IEEE 13-bus test feeder
+case = pcase.load("ieee13_opendss")
+
+# Run OpenDSS simulation
+dss.Text.Command(f'redirect "{case.dss}"')
+
+# Solve power flow
+dss.Solution.Solve()
+
+# Get results
+print(f"Converged: {dss.Solution.Converged()}")
+print(f"Total power: {dss.Circuit.TotalPower()}")
+
+# Iterate over loads
+for load in dss.Loads:
+    print(f"  {load.Name()}: {load.kW()} kW")
+
+# Get all bus voltages
+voltages = dss.Circuit.AllBusVMag()
+print(f"Voltage range: {min(voltages):.2f} - {max(voltages):.2f} V")
+```
+
+### Julia with OpenDSSDirect.jl
+
+```julia
+using PowerfulCases
+using OpenDSSDirect
+
+case = load("ieee13_opendss")
+dss("redirect \"$(case.dss)\"")
+
+Solution.Solve()
+println("Converged: ", Solution.Converged())
+println("Total power: ", Circuit.TotalPower())
+```
+
+### MATLAB with OpenDSS COM Interface
+
+```matlab
+case = pcase.load('ieee13_opendss');
+
+% Initialize OpenDSS COM server (Windows)
+DSSObj = actxserver('OpenDSSEngine.DSS');
+DSSObj.Start(0);
+DSSText = DSSObj.Text;
+
+% Load and solve
+DSSText.Command = ['redirect "' case.dss '"'];
+DSSObj.ActiveCircuit.Solution.Solve();
+
+fprintf('Converged: %d\n', DSSObj.ActiveCircuit.Solution.Converged);
+```
 
 ## License
 

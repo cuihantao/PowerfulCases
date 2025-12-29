@@ -45,7 +45,7 @@ class FileEntry:
 
     Attributes:
         path: Relative path to the file within the bundle directory
-        format: File format (e.g., "psse_raw", "psse_dyr", "matpower", "psat")
+        format: File format (e.g., "psse_raw", "psse_dyr", "matpower", "psat", "opendss")
         format_version: Format-specific version (e.g., "33" for PSS/E v33)
         variant: Variant name (e.g., "genrou" for different dynamic models)
         default: Whether this is the default file for its format

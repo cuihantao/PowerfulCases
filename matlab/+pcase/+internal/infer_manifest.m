@@ -16,6 +16,7 @@ function manifest = infer_manifest(case_dir)
     ext_formats = struct();
     ext_formats.raw = 'psse_raw';
     ext_formats.dyr = 'psse_dyr';
+    ext_formats.dss = 'opendss';
     ext_formats.m = 'matpower';
     ext_formats.xlsx = 'xlsx';
     ext_formats.csv = 'csv';

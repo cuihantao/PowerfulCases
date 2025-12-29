@@ -120,6 +120,11 @@ class CaseBundle:
         """Get the path to the PSAT file."""
         return file(self, "psat")
 
+    @property
+    def dss(self) -> str:
+        """Get the path to the default OpenDSS master file."""
+        return file(self, "opendss")
+
     # Credits API
     @property
     def credits(self) -> Optional[Credits]:
@@ -366,7 +371,7 @@ def file(
 
     Args:
         case: Case bundle
-        format: Format name (e.g., "psse_raw", "psse_dyr", "matpower", "raw", "dyr")
+        format: Format name (e.g., "psse_raw", "psse_dyr", "matpower", "opendss", "raw", "dyr", "dss")
         format_version: Optional format version (e.g., "33" for PSS/E v33)
         variant: Optional variant name (e.g., "genrou")
         required: If True, raise error if not found; if False, return None
@@ -420,6 +425,8 @@ def _normalize_format(format: str) -> str:
         return "psse_raw"
     elif format == "dyr":
         return "psse_dyr"
+    elif format == "dss":
+        return "opendss"
     return format
 
 

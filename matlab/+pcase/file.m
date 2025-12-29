@@ -11,7 +11,7 @@ function filepath = file(cb, format, varargin)
 %
 %   Arguments:
 %       case   - CaseBundle object
-%       format - Format string (e.g., 'psse_raw', 'psse_dyr', 'raw', 'dyr')
+%       format - Format string (e.g., 'psse_raw', 'psse_dyr', 'opendss', 'raw', 'dyr', 'dss')
 %
 %   Name-Value Arguments:
 %       variant  - Variant name (e.g., 'genrou', 'default')

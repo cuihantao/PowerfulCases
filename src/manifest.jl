@@ -38,7 +38,7 @@ Describes a single file in a case bundle.
 
 # Fields
 - `path::String`: Relative path to the file within the bundle directory
-- `format::Symbol`: File format (e.g., :psse_raw, :psse_dyr, :matpower, :psat)
+- `format::Symbol`: File format (e.g., :psse_raw, :psse_dyr, :matpower, :psat, :opendss)
 - `format_version::Union{String, Nothing}`: Format-specific version (e.g., "33" for PSS/E v33)
 - `variant::Union{String, Nothing}`: Variant name (e.g., "genrou" for different dynamic models)
 - `default::Bool`: Whether this is the default file for its format

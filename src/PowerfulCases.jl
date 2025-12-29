@@ -92,6 +92,8 @@ function Base.getproperty(cb::CaseBundle, prop::Symbol)
         return file(cb, :matpower)
     elseif prop === :psat
         return file(cb, :psat)
+    elseif prop === :dss
+        return file(cb, :opendss)
     elseif prop === :collection
         # First check manifest
         manifest = getfield(cb, :manifest)
@@ -344,7 +346,7 @@ Get the path to a file by format.
 
 # Arguments
 - `cb`: Case bundle
-- `format`: Format symbol (e.g., :psse_raw, :psse_dyr, :matpower, :raw, :dyr)
+- `format`: Format symbol (e.g., :psse_raw, :psse_dyr, :matpower, :opendss, :raw, :dyr, :dss)
 - `format_version`: Optional format version (e.g., "33" for PSS/E v33)
 - `variant`: Optional variant name (e.g., "genrou")
 - `required`: If true (default), error if not found; if false, return nothing
@@ -400,6 +402,8 @@ function _normalize_format(format::Symbol)
         return :psse_raw
     elseif format === :dyr
         return :psse_dyr
+    elseif format === :dss
+        return :opendss
     else
         return format
     end

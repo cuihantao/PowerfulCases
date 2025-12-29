@@ -13,11 +13,15 @@ classdef CaseBundle
 %       dyr       - Path to the default DYR file (or empty)
 %       matpower  - Path to the MATPOWER .m file (or empty)
 %       psat      - Path to the PSAT file (or empty)
+%       dss       - Path to the OpenDSS master file (or empty)
 %
 %   Example:
 %       case = pcase.load('ieee14');
 %       disp(case.raw)
 %       disp(case.dyr)
+%
+%       case = pcase.load('ieee13_opendss');
+%       disp(case.dss)
 %
 %   Compatible with both MATLAB and GNU Octave.
 
@@ -33,6 +37,7 @@ classdef CaseBundle
         dyr
         matpower  % MATPOWER .m file
         psat      % PSAT file
+        dss       % OpenDSS master file
     end
 
     methods
@@ -71,6 +76,11 @@ classdef CaseBundle
         function p = get.psat(obj)
             %GET.PSAT Get path to the PSAT file (or empty)
             p = pcase.file(obj, 'psat', 'required', false);
+        end
+
+        function p = get.dss(obj)
+            %GET.DSS Get path to the OpenDSS master file (or empty)
+            p = pcase.file(obj, 'opendss', 'required', false);
         end
 
         function disp(obj)
