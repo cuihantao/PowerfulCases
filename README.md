@@ -407,7 +407,7 @@ variant = "peak"
 includes = ["LineCodes.dss", "Lines.dss", "Loads_peak.dss", "LoadShape_peak.csv"]
 ```
 
-When downloading remote cases, all files in `includes` are downloaded alongside the main file.
+When downloading remote cases, all files in `includes` are downloaded alongside the main file. Files appearing in multiple `includes` lists (like `LineCodes.dss` above) are automatically deduplicated and downloaded only once.
 
 **When you need a manifest:**
 - Multiple files of the same format (e.g., several DYR variants)
