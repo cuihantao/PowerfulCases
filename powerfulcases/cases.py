@@ -397,7 +397,7 @@ def cases() -> List[str]:
 # Export API
 # ============================================================================
 
-def export(case_name: str, dest: str, overwrite: bool = False) -> str:
+def export_case(case_name: str, dest: str, overwrite: bool = False) -> str:
     """
     Export a case bundle to a local directory.
 
@@ -413,13 +413,13 @@ def export(case_name: str, dest: str, overwrite: bool = False) -> str:
         Path to exported directory
 
     Examples:
-        >>> export("ieee14", ".")
+        >>> export_case("ieee14", ".")
         './ieee14'
 
-        >>> export("ACTIVSg70k", "./cases")
+        >>> export_case("ACTIVSg70k", "./cases")
         './cases/ACTIVSg70k'
 
-        >>> export("ieee14", ".", overwrite=True)
+        >>> export_case("ieee14", ".", overwrite=True)
         './ieee14'
 
     Notes:

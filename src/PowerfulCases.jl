@@ -51,7 +51,7 @@ include("registry.jl")
 export load, file, cases, list_files, formats, variants
 export manifest
 export download, clear, set_cache_dir, info
-export export  # Export cases to local directory
+export export_case  # Export cases to local directory
 export CaseBundle, Manifest, FileEntry, Credits, Citation
 export get_credits, get_license, get_authors, get_maintainers, get_citations, has_credits
 
@@ -441,7 +441,7 @@ end
 # ============================================================================
 
 """
-    export(case_name::AbstractString, dest::AbstractString; overwrite::Bool=false) -> String
+    export_case(case_name::AbstractString, dest::AbstractString; overwrite::Bool=false) -> String
 
 Export a case bundle to a local directory.
 
@@ -459,16 +459,16 @@ directory are included (RAW, DYR variants, manifest, etc.).
 # Examples
 ```julia
 # Export bundled case to current directory
-export("ieee14", ".")              # → ./ieee14/
+export_case("ieee14", ".")              # → ./ieee14/
 
 # Export remote case (downloads first if needed)
-export("ACTIVSg70k", "./cases")    # → ./cases/ACTIVSg70k/
+export_case("ACTIVSg70k", "./cases")    # → ./cases/ACTIVSg70k/
 
 # Export with overwrite
-export("ieee14", "."; overwrite=true)
+export_case("ieee14", "."; overwrite=true)
 
 # Export local directory (copies it)
-export("/path/to/my-case", "./backup")
+export_case("/path/to/my-case", "./backup")
 ```
 
 # Notes
@@ -480,7 +480,7 @@ export("/path/to/my-case", "./backup")
 - Progress is shown for files larger than 100 MB
 - Files are copied preserving directory structure; no path traversal outside destination
 """
-function Base.export(case_name::AbstractString, dest::AbstractString; overwrite::Bool=false)
+function export_case(case_name::AbstractString, dest::AbstractString; overwrite::Bool=false)
     # Load the case (triggers download if needed for remote cases)
     case = load(case_name)
 

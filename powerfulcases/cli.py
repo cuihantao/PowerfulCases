@@ -67,10 +67,10 @@ def export_case(name: str, dest: Path, overwrite: bool):
         pcase export ieee14 ./my-project/cases
         pcase export ieee14 . --overwrite
     """
-    from .cases import export as _export
+    from .cases import export_case
 
     try:
-        result_dir = _export(name, str(dest), overwrite=overwrite)
+        result_dir = export_case(name, str(dest), overwrite=overwrite)
         # Success message already printed by export function
     except FileExistsError as e:
         click.echo(f"Error: {e}", err=True)

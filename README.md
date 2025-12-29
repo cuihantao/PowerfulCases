@@ -337,13 +337,13 @@ export("ieee14", ".", overwrite=true)
 import powerfulcases as pcase
 
 # Export to current directory
-pcase.export("ieee14", ".")              # → ./ieee14/
+pcase.export_case("ieee14", ".")              # → ./ieee14/
 
 # Export to project directory
-pcase.export("ieee14", "./my-project/cases")
+pcase.export_case("ieee14", "./my-project/cases")
 
 # Overwrite existing
-pcase.export("ieee14", ".", overwrite=True)
+pcase.export_case("ieee14", ".", overwrite=True)
 ```
 
 **Python CLI:**

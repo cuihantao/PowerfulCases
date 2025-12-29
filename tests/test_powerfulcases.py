@@ -18,7 +18,17 @@ from powerfulcases import (
     manifest,
     get_cache_dir,
     info,
-    export,
+    export_case,
+    load,
+    file,
+    cases,
+    formats,
+    variants,
+    CaseBundle,
+    manifest,
+    get_cache_dir,
+    info,
+    export_case,
     # Legacy API
     ieee14,
 )
@@ -1480,7 +1490,7 @@ default = true
 
 
 class TestExport:
-    """Tests for export() function."""
+    """Tests for export_case() function."""
 
     def test_export_bundled_case(self):
         """Test exporting a bundled case to a directory."""
@@ -1489,7 +1499,7 @@ class TestExport:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Export ieee14 to temp directory
-            result = export("ieee14", tmpdir)
+            result = export_case("ieee14", tmpdir)
 
             # Check destination structure
             dest_dir = Path(tmpdir) / "ieee14"
@@ -1517,7 +1527,7 @@ class TestExport:
                 os.chdir(tmpdir)
 
                 # Export to current directory
-                result = export("case5", ".")
+                result = export_case("case5", ".")
 
                 # Should create ./case5/ subdirectory
                 dest_dir = Path.cwd() / "case5"
@@ -1533,11 +1543,11 @@ class TestExport:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Export once
-            export("case9", tmpdir)
+            export_case("case9", tmpdir)
 
             # Try to export again without overwrite
             try:
-                export("case9", tmpdir)
+                export_case("case9", tmpdir)
                 assert False, "Should have raised FileExistsError"
             except FileExistsError as e:
                 assert "Directory exists" in str(e)
@@ -1551,7 +1561,7 @@ class TestExport:
             dest_dir = Path(tmpdir) / "npcc"
 
             # Export once
-            export("npcc", tmpdir)
+            export_case("npcc", tmpdir)
             assert dest_dir.exists()
 
             # Modify a file to test overwrite
@@ -1561,7 +1571,7 @@ class TestExport:
             assert test_file.read_text() == "MODIFIED CONTENT"
 
             # Export again with overwrite
-            export("npcc", tmpdir, overwrite=True)
+            export_case("npcc", tmpdir, overwrite=True)
 
             # Content should be restored
             assert test_file.read_text() == original_content
@@ -1585,7 +1595,7 @@ class TestExport:
             # Export to another location
             dest_parent = Path(tmpdir) / "exported"
             dest_parent.mkdir()
-            result = export(str(source_dir), str(dest_parent))
+            result = export_case(str(source_dir), str(dest_parent))
 
             # Check files were copied
             dest_dir = dest_parent / "my_case"
@@ -1642,7 +1652,7 @@ class TestExport:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Export ieee14 which has multiple DYR variants
-            export("ieee14", tmpdir)
+            export_case("ieee14", tmpdir)
 
             dest_dir = Path(tmpdir) / "ieee14"
             source_case = load("ieee14")
@@ -1661,7 +1671,7 @@ class TestExport:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Export case (use ieee14 which has DYR files)
-            export("ieee14", tmpdir)
+            export_case("ieee14", tmpdir)
 
             # Load the exported case
             dest_dir = Path(tmpdir) / "ieee14"
