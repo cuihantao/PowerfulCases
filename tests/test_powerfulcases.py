@@ -48,9 +48,9 @@ class TestNewAPI:
         assert case.is_remote is False
 
     def test_load_local_directory(self):
-        """Test loading a case from a local directory."""
+        """Test loading a case from a local directory (now in ieee-transmission collection)."""
         cases_dir = os.path.join(
-            os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee14"
+            os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee-transmission", "ieee14"
         )
         case = load(cases_dir)
         assert case.name == "ieee14"
@@ -243,7 +243,7 @@ class TestManifest:
         from powerfulcases.manifest import parse_manifest
 
         cases_dir = os.path.join(
-            os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee14"
+            os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee-transmission", "ieee14"
         )
         manifest_path = os.path.join(cases_dir, "manifest.toml")
 
@@ -1092,7 +1092,7 @@ class TestEdgeCases:
     def test_load_absolute_path(self):
         """Test load with absolute path."""
         cases_dir = os.path.join(
-            os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee14"
+            os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee-transmission", "ieee14"
         )
         abs_path = os.path.abspath(cases_dir)
         case = load(abs_path)
@@ -1107,7 +1107,7 @@ class TestManifestPaths:
         from powerfulcases.manifest import parse_manifest
 
         cases_dir = os.path.join(
-            os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee14"
+            os.path.dirname(__file__), "..", "powerfulcases", "cases", "ieee-transmission", "ieee14"
         )
         manifest_path = os.path.join(cases_dir, "manifest.toml")
 
