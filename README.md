@@ -552,7 +552,7 @@ pcase.clear("ACTIVSg70k")
 % MATLAB
 pcase.download('ACTIVSg70k')
 pcase.info()
-pcase.clear('ACTIVSg70k')
+pcase.clear_cache('ACTIVSg70k')
 ```
 
 ```bash

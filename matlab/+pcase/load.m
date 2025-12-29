@@ -32,13 +32,13 @@ function cb = load(name_or_path)
     cases_dir = pcase.internal.get_cases_dir();
 
     % 2. Check if it's a collection/case path
-    if contains(name_or_path, '/')
+    if any(name_or_path == '/')
         parts = strsplit(name_or_path, '/');
 
         % Validate each path component for security
         for i = 1:numel(parts)
             if strcmp(parts{i}, '..') || strcmp(parts{i}, '.') || ...
-               pcase.internal.starts_with(parts{i}, '/') || contains(parts{i}, '\')
+               pcase.internal.starts_with(parts{i}, '/') || any(parts{i} == '\')
                 error('pcase:InvalidPath', ...
                     'Invalid path component in ''%s''. Path traversal not allowed.', ...
                     name_or_path);
@@ -88,7 +88,7 @@ function cb = load(name_or_path)
     remote_path = find_remote_case_by_name(name_or_path, registry);
     if ~isempty(remote_path)
         % Extract collection from remote_path (e.g., "collection/case")
-        if contains(remote_path, '/')
+        if any(remote_path == '/')
             parts = strsplit(remote_path, '/');
             remote_coll = parts{1};
         else
@@ -169,7 +169,7 @@ function cb = load_remote_case(name_or_path, registry)
     end
 
     % Extract case name from "collection/case_name" or use as-is
-    if contains(name_or_path, '/')
+    if any(name_or_path == '/')
         parts = strsplit(name_or_path, '/');
         case_name = parts{end};
     else
@@ -218,7 +218,7 @@ function remote_path = find_remote_case_by_name(case_name, registry)
     for i = 1:numel(registry.remote_cases)
         remote_entry = registry.remote_cases{i};
         % Extract case name from "collection/case_name" format
-        if contains(remote_entry, '/')
+        if any(remote_entry == '/')
             parts = strsplit(remote_entry, '/');
             remote_case_name = parts{end};
         else

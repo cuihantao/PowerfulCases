@@ -4,6 +4,12 @@ function test_pcase()
 %
 %   Compatible with both MATLAB and GNU Octave.
 
+    % Suppress Octave warning about pcase.load shadowing built-in load.
+    % This is expected: users call pcase.load(), not bare load().
+    if exist('OCTAVE_VERSION', 'builtin')
+        warning('off', 'Octave:shadowed-function');
+    end
+
     fprintf('=== PowerfulCases MATLAB/Octave API Tests ===\n\n');
 
     passed = 0;

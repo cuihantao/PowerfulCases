@@ -36,7 +36,7 @@ function case_list = cases(varargin)
     for i = 1:numel(registry.remote_cases)
         remote_path = registry.remote_cases{i};
         % Extract case name from "collection/case_name" format
-        if contains(remote_path, '/')
+        if any(remote_path == '/')
             parts = strsplit(remote_path, '/');
             case_name = parts{end};
             coll_name = parts{1};
