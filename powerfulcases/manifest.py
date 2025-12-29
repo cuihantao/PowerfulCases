@@ -49,6 +49,7 @@ class FileEntry:
         format_version: Format-specific version (e.g., "33" for PSS/E v33)
         variant: Variant name (e.g., "genrou" for different dynamic models)
         default: Whether this is the default file for its format
+        includes: Additional files to download with this file (for bundle formats like OpenDSS)
     """
 
     path: str
@@ -56,6 +57,7 @@ class FileEntry:
     format_version: Optional[str] = None
     variant: Optional[str] = None
     default: bool = False
+    includes: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -137,6 +139,7 @@ def parse_manifest(path: Path) -> Manifest:
                 format_version=file_data.get("format_version"),
                 variant=file_data.get("variant"),
                 default=file_data.get("default", False),
+                includes=file_data.get("includes", []),
             )
         )
 
@@ -246,6 +249,8 @@ def write_manifest(manifest: Manifest, path: Path) -> None:
                 file_dict["variant"] = f.variant
             if f.default:
                 file_dict["default"] = True
+            if f.includes:
+                file_dict["includes"] = f.includes
             files_data.append(file_dict)
         data["files"] = files_data
 

@@ -1114,6 +1114,150 @@ class TestManifestPaths:
             assert os.path.isfile(manifest_path)
 
 
+class TestIncludesField:
+    """Tests for the includes field in FileEntry (for bundle formats like OpenDSS)."""
+
+    def test_file_entry_with_includes(self):
+        """Test FileEntry with includes field."""
+        from powerfulcases.manifest import FileEntry
+
+        entry = FileEntry(
+            path="master.dss",
+            format="opendss",
+            default=True,
+            includes=["linecodes.dss", "loadshapes.dss", "loads.dss"],
+        )
+        assert entry.path == "master.dss"
+        assert entry.format == "opendss"
+        assert entry.default is True
+        assert entry.includes == ["linecodes.dss", "loadshapes.dss", "loads.dss"]
+        assert len(entry.includes) == 3
+
+    def test_file_entry_without_includes(self):
+        """Test FileEntry defaults to empty includes list."""
+        from powerfulcases.manifest import FileEntry
+
+        entry = FileEntry(path="test.raw", format="psse_raw")
+        assert entry.includes == []
+
+    def test_write_and_parse_manifest_with_includes(self):
+        """Test round-trip of manifest with includes field."""
+        from powerfulcases.manifest import Manifest, FileEntry, write_manifest, parse_manifest
+        from pathlib import Path
+
+        files = [
+            FileEntry(
+                path="master.dss",
+                format="opendss",
+                default=True,
+                includes=["linecodes.dss", "loads.dss"],
+            ),
+            FileEntry(path="test.raw", format="psse_raw"),
+        ]
+        manifest = Manifest(name="includes_test", files=files)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manifest_path = Path(tmpdir) / "manifest.toml"
+            write_manifest(manifest, manifest_path)
+
+            # Check file contains includes
+            content = manifest_path.read_text()
+            assert "includes" in content
+            assert "linecodes.dss" in content
+            assert "loads.dss" in content
+
+            # Parse back and verify
+            parsed = parse_manifest(manifest_path)
+            assert len(parsed.files) == 2
+
+            dss_file = [f for f in parsed.files if f.format == "opendss"][0]
+            assert dss_file.includes == ["linecodes.dss", "loads.dss"]
+
+            raw_file = [f for f in parsed.files if f.format == "psse_raw"][0]
+            assert raw_file.includes == []
+
+    def test_list_files_includes_metadata(self):
+        """Test list_files returns includes in file metadata."""
+        from powerfulcases.manifest import Manifest, FileEntry, write_manifest
+        from pathlib import Path
+
+        files = [
+            FileEntry(
+                path="master.dss",
+                format="opendss",
+                default=True,
+                includes=["data.dss", "profile.csv"],
+            ),
+        ]
+        manifest = Manifest(name="list_files_test", files=files)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            write_manifest(manifest, tmpdir / "manifest.toml")
+            (tmpdir / "master.dss").write_text("// OpenDSS file")
+            (tmpdir / "data.dss").write_text("// Data file")
+            (tmpdir / "profile.csv").write_text("t,v\n0,1.0")
+
+            case = load(str(tmpdir))
+            files_list = case.list_files()
+            assert len(files_list) == 1
+
+            first_file = files_list[0]
+            assert hasattr(first_file, "includes")
+            assert first_file.includes == ["data.dss", "profile.csv"]
+
+    def test_manifest_empty_includes_not_written(self):
+        """Test that empty includes list is not written to TOML."""
+        from powerfulcases.manifest import Manifest, FileEntry, write_manifest
+        from pathlib import Path
+
+        files = [
+            FileEntry(path="test.raw", format="psse_raw", default=True),
+        ]
+        manifest = Manifest(name="empty_deps_test", files=files)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manifest_path = Path(tmpdir) / "manifest.toml"
+            write_manifest(manifest, manifest_path)
+
+            content = manifest_path.read_text()
+            # Should not have "includes" key when empty
+            assert "includes" not in content
+
+    def test_multiple_files_with_includes(self):
+        """Test manifest with multiple files having different includes."""
+        from powerfulcases.manifest import Manifest, FileEntry, write_manifest, parse_manifest
+        from pathlib import Path
+
+        files = [
+            FileEntry(
+                path="master_base.dss",
+                format="opendss",
+                default=True,
+                includes=["base_data.dss"],
+            ),
+            FileEntry(
+                path="master_peak.dss",
+                format="opendss",
+                variant="peak",
+                includes=["peak_data.dss", "peak_profile.csv"],
+            ),
+        ]
+        manifest = Manifest(name="multi_includes_test", files=files)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manifest_path = Path(tmpdir) / "manifest.toml"
+            write_manifest(manifest, manifest_path)
+
+            parsed = parse_manifest(manifest_path)
+
+            base_file = [f for f in parsed.files if f.default][0]
+            assert base_file.includes == ["base_data.dss"]
+
+            peak_file = [f for f in parsed.files if f.variant == "peak"][0]
+            assert peak_file.includes == ["peak_data.dss", "peak_profile.csv"]
+
+
 class TestCredits:
     """Tests for credits and licensing functionality."""
 
@@ -1352,6 +1496,7 @@ def run_all_tests():
         TestSetupExcludeGeneration,
         TestEdgeCases,
         TestManifestPaths,
+        TestIncludesField,
         TestCredits,
     ]
 

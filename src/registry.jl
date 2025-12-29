@@ -168,21 +168,36 @@ function download(name::AbstractString; force::Bool=false)
         return case_dir
     end
 
-    # Step 3: Download each file
+    # Step 3: Download each file and its includes
+    downloaded = Set{String}()  # Track downloaded files to avoid duplicates
     for file_entry in files
         file_path = get(file_entry, "path", nothing)
         if file_path === nothing
             continue
         end
 
-        file_url = "$(base_url)/$(file_path)"
-        dest_path = joinpath(case_dir, file_path)
+        # Download the main file
+        if file_path ∉ downloaded
+            file_url = "$(base_url)/$(file_path)"
+            dest_path = joinpath(case_dir, file_path)
+            mkpath(dirname(dest_path))
+            @info "Downloading: $file_path"
+            download_file(file_url, dest_path; progress=false)
+            push!(downloaded, file_path)
+        end
 
-        # Create parent directories if needed
-        mkpath(dirname(dest_path))
-
-        @info "Downloading: $file_path"
-        download_file(file_url, dest_path; progress=false)
+        # Download includes (additional files bundled with this entry)
+        includes = get(file_entry, "includes", String[])
+        for include_path in includes
+            if include_path ∉ downloaded
+                include_url = "$(base_url)/$(include_path)"
+                dest_path = joinpath(case_dir, include_path)
+                mkpath(dirname(dest_path))
+                @info "Downloading: $include_path"
+                download_file(include_url, dest_path; progress=false)
+                push!(downloaded, include_path)
+            end
+        end
     end
 
     @info "Downloaded case '$name' to $case_dir"

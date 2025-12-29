@@ -391,10 +391,29 @@ license = "proprietary"
 authors = ["Grid Operations Team"]
 ```
 
+**Bundle formats (OpenDSS):** For formats where a main file references additional files, use `includes` to list dependent files:
+
+```toml
+[[files]]
+path = "Master.dss"
+format = "opendss"
+default = true
+includes = ["LineCodes.dss", "Lines.dss", "Loads.dss", "LoadShape.csv"]
+
+[[files]]
+path = "Master_peak.dss"
+format = "opendss"
+variant = "peak"
+includes = ["LineCodes.dss", "Lines.dss", "Loads_peak.dss", "LoadShape_peak.csv"]
+```
+
+When downloading remote cases, all files in `includes` are downloaded alongside the main file.
+
 **When you need a manifest:**
 - Multiple files of the same format (e.g., several DYR variants)
 - Ambiguous extensions (`.m` could be MATPOWER or PSAT)
 - Format version tracking (PSS/E v33 vs v34)
+- Bundle formats with dependent files (OpenDSS)
 - Attribution and licensing metadata
 
 **When you don't need a manifest:**

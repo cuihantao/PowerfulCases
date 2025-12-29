@@ -110,6 +110,9 @@ function toml = generate_toml(m)
         if f.default
             lines{end+1} = 'default = true';
         end
+        if isfield(f, 'includes') && ~isempty(f.includes)
+            lines{end+1} = sprintf('includes = [%s]', format_string_array(f.includes));
+        end
         lines{end+1} = '';
     end
 

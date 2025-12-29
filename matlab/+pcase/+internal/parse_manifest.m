@@ -42,7 +42,7 @@ function manifest = parse_manifest(filepath)
             if strcmp(section_name, 'files')
                 current_section = 'files';
                 current_file = struct('path', '', 'format', '', 'format_version', '', ...
-                                      'variant', '', 'default', false);
+                                      'variant', '', 'default', false, 'includes', {{}});
                 in_file_block = true;
             elseif strcmp(section_name, 'credits.citations')
                 current_section = 'credits.citations';

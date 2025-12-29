@@ -63,6 +63,7 @@ class FileInfo(NamedTuple):
     format_version: Optional[str]
     variant: Optional[str]
     default: bool
+    includes: List[str]
 
 
 class CaseBundle:
@@ -182,6 +183,7 @@ class CaseBundle:
                 format_version=f.format_version,
                 variant=f.variant,
                 default=f.default,
+                includes=f.includes,
             )
             for f in self.manifest.files
         ]

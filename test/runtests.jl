@@ -649,6 +649,90 @@ remote_cases = ["case1", "case2", "case3"]
         @test manifest.name == "ieee14"
     end
 
+    @testset "Includes field" begin
+        using PowerfulCases: FileEntry, Manifest, parse_manifest, write_manifest
+
+        # Test FileEntry with includes
+        entry = FileEntry("Master.dss", :opendss;
+            default=true,
+            includes=["LineCodes.dss", "Lines.dss", "Loads.dss"]
+        )
+        @test entry.includes == ["LineCodes.dss", "Lines.dss", "Loads.dss"]
+        @test length(entry.includes) == 3
+
+        # Test FileEntry without includes (default empty)
+        entry_no_includes = FileEntry("test.raw", :psse_raw)
+        @test isempty(entry_no_includes.includes)
+
+        # Test Manifest with files that have includes
+        files = [
+            FileEntry("Master.dss", :opendss;
+                default=true,
+                includes=["LineCodes.dss", "Lines.dss"]
+            ),
+            FileEntry("test.raw", :psse_raw; default=true),
+        ]
+        manifest = Manifest("test_opendss"; files=files)
+        @test manifest.files[1].includes == ["LineCodes.dss", "Lines.dss"]
+        @test isempty(manifest.files[2].includes)
+
+        # Test write_manifest and parse_manifest round-trip with includes
+        mktempdir() do dir
+            files = [
+                FileEntry("Master.dss", :opendss;
+                    default=true,
+                    includes=["LineCodes.dss", "Lines.dss", "Loads.dss"]
+                ),
+                FileEntry("Master_peak.dss", :opendss;
+                    variant="peak",
+                    includes=["LineCodes.dss", "Lines.dss", "Loads_peak.dss"]
+                ),
+            ]
+            manifest = Manifest("ieee13";
+                description="IEEE 13-bus distribution test feeder",
+                files=files
+            )
+
+            # Write manifest
+            manifest_path = joinpath(dir, "manifest.toml")
+            write_manifest(manifest, manifest_path)
+            @test isfile(manifest_path)
+
+            # Read manifest content and verify includes is present
+            content = read(manifest_path, String)
+            @test occursin("includes", content)
+            @test occursin("LineCodes.dss", content)
+
+            # Parse and verify
+            parsed = parse_manifest(manifest_path)
+            @test length(parsed.files) == 2
+            @test parsed.files[1].includes == ["LineCodes.dss", "Lines.dss", "Loads.dss"]
+            @test parsed.files[2].includes == ["LineCodes.dss", "Lines.dss", "Loads_peak.dss"]
+            @test parsed.files[2].variant == "peak"
+        end
+
+        # Test list_files includes the includes field in metadata
+        mktempdir() do dir
+            files = [
+                FileEntry("Master.dss", :opendss;
+                    default=true,
+                    includes=["LineCodes.dss", "Lines.dss"]
+                ),
+            ]
+            manifest = Manifest("test_list"; files=files)
+            write_manifest(manifest, joinpath(dir, "manifest.toml"))
+            touch(joinpath(dir, "Master.dss"))
+            touch(joinpath(dir, "LineCodes.dss"))
+            touch(joinpath(dir, "Lines.dss"))
+
+            case = load(dir)
+            file_list = list_files(case)
+            @test !isempty(file_list)
+            @test haskey(file_list[1], :includes)
+            @test file_list[1].includes == ["LineCodes.dss", "Lines.dss"]
+        end
+    end
+
     @testset "Credits API" begin
         using PowerfulCases: Citation, Credits, get_credits, get_license, get_authors,
                              get_maintainers, get_citations, has_credits, write_manifest

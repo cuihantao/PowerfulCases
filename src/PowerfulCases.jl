@@ -335,7 +335,7 @@ List all files in a case bundle with their metadata.
 """
 function list_files(cb::CaseBundle)
     [(path=f.path, format=f.format, format_version=f.format_version,
-      variant=f.variant, default=f.default) for f in cb.manifest.files]
+      variant=f.variant, default=f.default, includes=f.includes) for f in cb.manifest.files]
 end
 
 # ============================================================================

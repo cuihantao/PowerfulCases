@@ -67,15 +67,34 @@ function case_dir = download(name, varargin)
             'Manifest for ''%s'' contains no files. This may indicate corrupted remote data.', name);
     end
 
-    % Step 3: Download each file
+    % Step 3: Download each file and its includes
+    downloaded = {};  % Track downloaded files to avoid duplicates
     for i = 1:numel(manifest.files)
         f = manifest.files{i};
         file_path = f.path;
-        file_url = sprintf('%s/%s', base_url, file_path);
-        dest_path = fullfile(case_dir, file_path);
 
-        fprintf('Downloading: %s\n', file_path);
-        pcase.internal.download_file(file_url, dest_path);
+        % Download the main file
+        if ~ismember(file_path, downloaded)
+            file_url = sprintf('%s/%s', base_url, file_path);
+            dest_path = fullfile(case_dir, file_path);
+            fprintf('Downloading: %s\n', file_path);
+            pcase.internal.download_file(file_url, dest_path);
+            downloaded{end+1} = file_path;
+        end
+
+        % Download includes (additional files bundled with this entry)
+        if isfield(f, 'includes') && ~isempty(f.includes)
+            for j = 1:numel(f.includes)
+                include_path = f.includes{j};
+                if ~ismember(include_path, downloaded)
+                    include_url = sprintf('%s/%s', base_url, include_path);
+                    dest_path = fullfile(case_dir, include_path);
+                    fprintf('Downloading: %s\n', include_path);
+                    pcase.internal.download_file(include_url, dest_path);
+                    downloaded{end+1} = include_path;
+                end
+            end
+        end
     end
 
     fprintf('Downloaded case ''%s'' to %s\n', name, case_dir);

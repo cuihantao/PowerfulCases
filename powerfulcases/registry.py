@@ -8,7 +8,7 @@ are remote (not bundled in the Python wheel).
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Set
 
 try:
     import tomllib
@@ -193,20 +193,32 @@ def download(name: str, force: bool = False) -> Path:
         print(f"Warning: No files listed in manifest for '{name}'")
         return case_dir
 
-    # Step 3: Download each file
+    # Step 3: Download each file and its includes
+    downloaded: Set[str] = set()  # Track downloaded files to avoid duplicates
     for file_entry in files:
         file_path = file_entry.get("path")
         if not file_path:
             continue
 
-        file_url = f"{base_url}/{file_path}"
-        dest_path = case_dir / file_path
+        # Download the main file
+        if file_path not in downloaded:
+            file_url = f"{base_url}/{file_path}"
+            dest_path = case_dir / file_path
+            dest_path.parent.mkdir(parents=True, exist_ok=True)
+            print(f"Downloading: {file_path}")
+            download_file(file_url, dest_path, progress=False)
+            downloaded.add(file_path)
 
-        # Create parent directories if needed
-        dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-        print(f"Downloading: {file_path}")
-        download_file(file_url, dest_path, progress=False)
+        # Download includes (additional files bundled with this entry)
+        includes = file_entry.get("includes", [])
+        for include_path in includes:
+            if include_path not in downloaded:
+                include_url = f"{base_url}/{include_path}"
+                dest_path = case_dir / include_path
+                dest_path.parent.mkdir(parents=True, exist_ok=True)
+                print(f"Downloading: {include_path}")
+                download_file(include_url, dest_path, progress=False)
+                downloaded.add(include_path)
 
     print(f"Downloaded case '{name}' to {case_dir}")
     return case_dir

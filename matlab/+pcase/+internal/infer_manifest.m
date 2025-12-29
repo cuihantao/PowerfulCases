@@ -52,6 +52,7 @@ function manifest = infer_manifest(case_dir)
         file_entry.format = format;
         file_entry.format_version = '';
         file_entry.variant = '';
+        file_entry.includes = {};
 
         % Set as default if first of this format
         if ~isfield(seen_formats, format)

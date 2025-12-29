@@ -42,6 +42,7 @@ Describes a single file in a case bundle.
 - `format_version::Union{String, Nothing}`: Format-specific version (e.g., "33" for PSS/E v33)
 - `variant::Union{String, Nothing}`: Variant name (e.g., "genrou" for different dynamic models)
 - `default::Bool`: Whether this is the default file for its format
+- `includes::Vector{String}`: Additional files to download with this file (for bundle formats like OpenDSS)
 """
 struct FileEntry
     path::String
@@ -49,13 +50,15 @@ struct FileEntry
     format_version::Union{String, Nothing}
     variant::Union{String, Nothing}
     default::Bool
+    includes::Vector{String}
 end
 
 function FileEntry(path::String, format::Symbol;
                    format_version::Union{String, Nothing}=nothing,
                    variant::Union{String, Nothing}=nothing,
-                   default::Bool=false)
-    FileEntry(path, format, format_version, variant, default)
+                   default::Bool=false,
+                   includes::Vector{String}=String[])
+    FileEntry(path, format, format_version, variant, default, includes)
 end
 
 """
@@ -150,8 +153,9 @@ function parse_manifest(path::AbstractString)
         format_version = get(file_data, "format_version", nothing)
         variant = get(file_data, "variant", nothing)
         default = get(file_data, "default", false)
+        includes = convert(Vector{String}, get(file_data, "includes", String[]))
 
-        push!(files, FileEntry(file_path, format; format_version, variant, default))
+        push!(files, FileEntry(file_path, format; format_version, variant, default, includes))
     end
 
     # Parse credits section if present
@@ -252,6 +256,9 @@ function write_manifest(manifest::Manifest, path::AbstractString)
                 end
                 if f.default
                     file_dict["default"] = true
+                end
+                if !isempty(f.includes)
+                    file_dict["includes"] = f.includes
                 end
                 file_dict
             end
