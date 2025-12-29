@@ -358,6 +358,18 @@ pcase export ieee14 ./my-project/cases
 pcase export ieee14 . --overwrite
 ```
 
+**MATLAB:**
+```matlab
+% Export to current directory
+pcase.export_case('ieee14', '.')              % → ./ieee14/
+
+% Export to project directory
+pcase.export_case('ieee14', './my-project/cases')
+
+% Overwrite existing
+pcase.export_case('ieee14', '.', 'overwrite', true)
+```
+
 ### Typical Workflow
 
 ```bash
@@ -386,6 +398,13 @@ solve(ACPowerFlowProblem(sys), Newton())
 import andes
 ss = andes.load("./my-project/ieee14/ieee14.raw")
 ss.PFlow.run()
+```
+
+```matlab
+% MATLAB with Simulink
+case = pcase.load('./my-project/ieee14');
+% Open modified .slx model or load data
+% open_system(case.file('simulink'))  % For future .slx support
 ```
 
 **Benefits of exported cases:**

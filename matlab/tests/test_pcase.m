@@ -210,6 +210,161 @@ function test_pcase()
         failed = failed + 1;
     end
 
+    % Test 15: export_case basic functionality
+    try
+        fprintf('Test 15: pcase.export_case()... ');
+        tmpdir = tempname();
+        mkdir(tmpdir);
+        try
+            dest = pcase.export_case('ieee14', tmpdir);
+            assert(pcase.internal.is_folder(dest), 'exported directory should exist');
+            expected = fullfile(tmpdir, 'ieee14');
+            assert(strcmp(dest, expected), 'should export to dest/case_name/');
+            rmdir(tmpdir, 's');
+            fprintf('PASSED\n');
+            passed = passed + 1;
+        catch ME
+            if pcase.internal.is_folder(tmpdir)
+                rmdir(tmpdir, 's');
+            end
+            rethrow(ME);
+        end
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 16: export_case creates all files
+    try
+        fprintf('Test 16: export_case includes all files... ');
+        tmpdir = tempname();
+        mkdir(tmpdir);
+        try
+            dest = pcase.export_case('ieee14', tmpdir);
+            % Check that RAW file exists
+            raw_exists = pcase.internal.is_file(fullfile(dest, 'ieee14.raw'));
+            assert(raw_exists, 'RAW file should exist in exported directory');
+            % Check manifest exists
+            manifest_exists = pcase.internal.is_file(fullfile(dest, 'manifest.toml'));
+            assert(manifest_exists, 'manifest.toml should exist');
+            rmdir(tmpdir, 's');
+            fprintf('PASSED\n');
+            passed = passed + 1;
+        catch ME
+            if pcase.internal.is_folder(tmpdir)
+                rmdir(tmpdir, 's');
+            end
+            rethrow(ME);
+        end
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 17: export_case fails when directory exists
+    try
+        fprintf('Test 17: export_case errors on existing dir... ');
+        tmpdir = tempname();
+        mkdir(tmpdir);
+        try
+            pcase.export_case('ieee14', tmpdir);
+            % Try to export again without overwrite - should fail
+            try
+                pcase.export_case('ieee14', tmpdir);
+                fprintf('FAILED: should have thrown error\n');
+                failed = failed + 1;
+                rmdir(tmpdir, 's');
+            catch
+                rmdir(tmpdir, 's');
+                fprintf('PASSED\n');
+                passed = passed + 1;
+            end
+        catch ME
+            if pcase.internal.is_folder(tmpdir)
+                rmdir(tmpdir, 's');
+            end
+            rethrow(ME);
+        end
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 18: export_case with overwrite
+    try
+        fprintf('Test 18: export_case with overwrite... ');
+        tmpdir = tempname();
+        mkdir(tmpdir);
+        try
+            dest1 = pcase.export_case('ieee14', tmpdir);
+            % Export again with overwrite=true - should succeed
+            dest2 = pcase.export_case('ieee14', tmpdir, 'overwrite', true);
+            assert(strcmp(dest1, dest2), 'should return same path');
+            assert(pcase.internal.is_folder(dest2), 'directory should still exist');
+            rmdir(tmpdir, 's');
+            fprintf('PASSED\n');
+            passed = passed + 1;
+        catch ME
+            if pcase.internal.is_folder(tmpdir)
+                rmdir(tmpdir, 's');
+            end
+            rethrow(ME);
+        end
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 19: exported case can be loaded
+    try
+        fprintf('Test 19: load exported case... ');
+        tmpdir = tempname();
+        mkdir(tmpdir);
+        try
+            dest = pcase.export_case('ieee14', tmpdir);
+            % Load from exported directory
+            c = pcase.load(dest);
+            assert(strcmp(c.name, 'ieee14'), 'loaded case should have correct name');
+            assert(~isempty(c.raw), 'loaded case should have RAW file');
+            rmdir(tmpdir, 's');
+            fprintf('PASSED\n');
+            passed = passed + 1;
+        catch ME
+            if pcase.internal.is_folder(tmpdir)
+                rmdir(tmpdir, 's');
+            end
+            rethrow(ME);
+        end
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 20: export_case creates parent directories
+    try
+        fprintf('Test 20: export_case creates parent dirs... ');
+        tmpbase = tempname();
+        tmpdir = fullfile(tmpbase, 'nested', 'path');
+        try
+            dest = pcase.export_case('ieee14', tmpdir);
+            expected = fullfile(tmpdir, 'ieee14');
+            assert(strcmp(dest, expected), 'should return correct nested path');
+            assert(pcase.internal.is_folder(dest), 'nested directory should exist');
+            assert(pcase.internal.is_file(fullfile(dest, 'ieee14.raw')), 'RAW file should exist');
+            rmdir(tmpbase, 's');
+            fprintf('PASSED\n');
+            passed = passed + 1;
+        catch ME
+            if pcase.internal.is_folder(tmpbase)
+                rmdir(tmpbase, 's');
+            end
+            rethrow(ME);
+        end
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
     % Summary
     fprintf('\n=== Test Summary ===\n');
     fprintf('Passed: %d\n', passed);
