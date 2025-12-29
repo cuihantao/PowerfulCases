@@ -57,11 +57,11 @@ function dest_dir = export_case(case_name, dest, varargin)
     overwrite = p.Results.overwrite;
 
     % Load the case (triggers download if needed for remote cases)
-    case = pcase.load(case_name);
+    cb = pcase.load(case_name);
 
     % Determine destination: dest/case_name/
     dest_abs = pcase.internal.get_absolute_path(dest);
-    dest_dir = fullfile(dest_abs, case.name);
+    dest_dir = fullfile(dest_abs, cb.name);
 
     % Create parent directory if needed
     if ~pcase.internal.is_folder(dest_abs)
@@ -77,14 +77,14 @@ function dest_dir = export_case(case_name, dest, varargin)
     end
 
     % Calculate total size for progress reporting
-    [file_list, total_size] = get_all_files_and_size(case.dir);
+    [file_list, total_size] = get_all_files_and_size(cb.dir);
 
     % Show progress if size exceeds threshold
     show_progress = total_size > PROGRESS_THRESHOLD_BYTES;
 
     if show_progress
         size_mb = total_size / (1024 * 1024);
-        fprintf('Exporting %s (%.2f MB)...\n', case.name, size_mb);
+        fprintf('Exporting %s (%.2f MB)...\n', cb.name, size_mb);
     end
 
     % Remove existing directory if it exists
@@ -105,7 +105,7 @@ function dest_dir = export_case(case_name, dest, varargin)
 
     % Copy the entire directory
     % MATLAB's copyfile can copy entire directories recursively
-    [success, msg] = copyfile(case.dir, dest_dir);
+    [success, msg] = copyfile(cb.dir, dest_dir);
     if ~success
         error('pcase:CopyFailed', 'Failed to copy directory: %s', msg);
     end
@@ -113,7 +113,7 @@ function dest_dir = export_case(case_name, dest, varargin)
     % Report summary
     num_files = numel(file_list);
     size_mb = total_size / (1024 * 1024);
-    fprintf('Exported %s → %s\n', case.name, dest_dir);
+    fprintf('Exported %s → %s\n', cb.name, dest_dir);
     fprintf('Copied %d files (%.2f MB)\n', num_files, size_mb);
 end
 
