@@ -365,6 +365,97 @@ function test_pcase()
         failed = failed + 1;
     end
 
+    % Test 21: pcase.collections()
+    try
+        fprintf('Test 21: pcase.collections()... ');
+        colls = pcase.collections();
+        assert(iscell(colls), 'collections() should return cell array');
+        assert(~isempty(colls), 'should have at least one collection');
+        assert(ismember('ieee-transmission', colls), 'should include ieee-transmission');
+        fprintf('PASSED\n');
+        passed = passed + 1;
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 22: pcase.cases() with collection filter
+    try
+        fprintf('Test 22: pcase.cases(''collection'', ...)... ');
+        trans_cases = pcase.cases('collection', 'ieee-transmission');
+        assert(iscell(trans_cases), 'filtered cases should be cell array');
+        assert(numel(trans_cases) == 8, 'ieee-transmission should have 8 cases');
+        assert(ismember('ieee14', trans_cases), 'should include ieee14');
+        fprintf('PASSED\n');
+        passed = passed + 1;
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 23: pcase.load() searches collections
+    try
+        fprintf('Test 23: load searches collections... ');
+        c = pcase.load('ieee14');
+        assert(strcmp(c.name, 'ieee14'), 'should load ieee14');
+        fprintf('PASSED\n');
+        passed = passed + 1;
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 24: pcase.load() with collection/case path
+    try
+        fprintf('Test 24: load(''collection/case'')... ');
+        c = pcase.load('ieee-transmission/ieee14');
+        assert(strcmp(c.name, 'ieee14'), 'should load ieee14');
+        fprintf('PASSED\n');
+        passed = passed + 1;
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 25: cases() returns all 88 cases
+    try
+        fprintf('Test 25: cases() returns all cases... ');
+        all_cases = pcase.cases();
+        assert(numel(all_cases) == 88, 'should have 88 total cases');
+        fprintf('PASSED\n');
+        passed = passed + 1;
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 26: Synthetic collection filter
+    try
+        fprintf('Test 26: synthetic collection filter... ');
+        synth_cases = pcase.cases('collection', 'synthetic');
+        assert(iscell(synth_cases), 'should return cell array');
+        assert(numel(synth_cases) == 10, 'synthetic should have 10 cases');
+        assert(ismember('ACTIVSg2000', synth_cases), 'should include ACTIVSg2000');
+        fprintf('PASSED\n');
+        passed = passed + 1;
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
+    % Test 27: Nonexistent collection returns empty
+    try
+        fprintf('Test 27: nonexistent collection... ');
+        result = pcase.cases('collection', 'nonexistent');
+        assert(iscell(result), 'should return cell array');
+        assert(isempty(result), 'should be empty for nonexistent collection');
+        fprintf('PASSED\n');
+        passed = passed + 1;
+    catch ME
+        fprintf('FAILED: %s\n', ME.message);
+        failed = failed + 1;
+    end
+
     % Summary
     fprintf('\n=== Test Summary ===\n');
     fprintf('Passed: %d\n', passed);

@@ -1,0 +1,40 @@
+name = "ieee34_opendss"
+description = "IEEE 34-bus distribution test feeder (OpenDSS format)"
+
+[credits]
+license = "BSD-3-Clause"
+authors = ["EPRI"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "IEEE 34 Node Test Feeder, OpenDSS Test Cases, EPRI Distribution System Simulator"
+
+[[files]]
+path = "Run_IEEE34Mod1.dss"
+format = "opendss"
+default = true
+
+[[files]]
+path = "Run_IEEE34Mod2.dss"
+format = "opendss"
+variant = "mod2"
+
+[[files]]
+path = "ieee34Mod1.dss"
+format = "opendss"
+
+[[files]]
+path = "ieee34Mod2.dss"
+format = "opendss"
+
+[[files]]
+path = "IEEELineCodes.DSS"
+format = "opendss"
+
+[[files]]
+path = "nmsu_linecode2_ABC.txt"
+format = "text"
+
+[[files]]
+path = "IEEE34_BusXY.csv"
+format = "csv"

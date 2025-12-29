@@ -48,7 +48,7 @@ include("cache.jl")
 include("registry.jl")
 
 # Re-export key functions from submodules
-export load, file, cases, list_files, formats, variants
+export load, file, cases, collections, list_files, formats, variants
 export manifest
 export download, clear, set_cache_dir, info
 export export_case  # Export cases to local directory
@@ -92,6 +92,19 @@ function Base.getproperty(cb::CaseBundle, prop::Symbol)
         return file(cb, :matpower)
     elseif prop === :psat
         return file(cb, :psat)
+    elseif prop === :collection
+        # First check manifest
+        manifest = getfield(cb, :manifest)
+        if manifest.collection !== nothing
+            return manifest.collection
+        end
+        # Infer from directory structure
+        dir = getfield(cb, :dir)
+        parent_name = basename(dirname(dir))
+        return parent_name == "cases" ? nothing : parent_name
+    elseif prop === :tags
+        manifest = getfield(cb, :manifest)
+        return manifest.tags
     else
         # Try as a format symbol
         try
@@ -103,7 +116,7 @@ function Base.getproperty(cb::CaseBundle, prop::Symbol)
     end
 end
 
-Base.propertynames(cb::CaseBundle) = (:name, :dir, :manifest, :is_remote, :raw, :dyr, formats(cb)...)
+Base.propertynames(cb::CaseBundle) = (:name, :dir, :manifest, :is_remote, :collection, :tags, :raw, :dyr, formats(cb)...)
 
 # Functor syntax for backward compatibility: case("genrou") → file(case, :dyr, variant="genrou")
 (cb::CaseBundle)(variant::String) = file(cb, :psse_dyr; variant=variant)
@@ -174,38 +187,96 @@ end
 
 Load a case bundle by name or path.
 
+The API automatically searches all collections (bundled + remote) to find the case.
+Users don't need to know which collection a case belongs to.
+
 # Arguments
-- `name_or_path`: Either a case name (e.g., "ieee14") or a path to a local directory
+- `name_or_path`: Either a case name (e.g., "ieee14"), a collection/case path
+                  (e.g., "ieee-transmission/ieee14"), or a path to a local directory
 
 # Examples
 ```julia
-# Built-in case
+# Searches all collections
 case = load("ieee14")
+
+# Explicit collection
+case = load("ieee-transmission/ieee14")
 
 # Local directory
 case = load("/path/to/my/project")
 ```
 """
 function load(name_or_path::AbstractString)
-    # Check if it's a path (contains / or \\ or is absolute)
+    # 1. Check if it's a directory path
     if isdir(name_or_path)
         return _load_local_case(name_or_path)
     end
 
-    # Check if it's a known bundled case
-    bundled_dir = joinpath(CASES_DIR, name_or_path)
-    if isdir(bundled_dir)
-        return _load_bundled_case(name_or_path, bundled_dir)
+    # 2. Check if it's a collection/case path
+    if occursin("/", name_or_path)
+        parts = split(name_or_path, "/")
+
+        # Validate each path component for security
+        for part in parts
+            _validate_path_component(part)
+        end
+
+        bundled_dir = joinpath(CASES_DIR, parts...)
+
+        # Verify resolved path is within CASES_DIR
+        if isdir(bundled_dir) && startswith(abspath(bundled_dir), abspath(CASES_DIR))
+            return _load_bundled_case(parts[end], bundled_dir)
+        end
+
+        # Also check if it's a remote case with collection/case format
+        if is_remote_case(name_or_path)
+            return _load_remote_case(name_or_path)
+        end
     end
 
-    # Check if it's a remote case
-    if is_remote_case(name_or_path)
-        return _load_remote_case(name_or_path)
+    # 3. Collect ALL matches from both bundled and remote sources
+    matches = []  # List of (source_type, collection, location) tuples
+
+    # Bundled matches
+    case_dirs = _find_case_in_collections(name_or_path)
+    for case_dir in case_dirs
+        parent_dir = dirname(case_dir)
+        coll_name = parent_dir == CASES_DIR ? "(root)" : basename(parent_dir)
+        push!(matches, ("bundled", coll_name, case_dir))
+    end
+
+    # Remote matches
+    remote_path = _find_remote_case_by_name(name_or_path)
+    if remote_path !== nothing
+        # Extract collection from remote_path (e.g., "collection/case")
+        if occursin("/", remote_path)
+            remote_coll = split(remote_path, "/")[1]
+        else
+            remote_coll = "(root)"
+        end
+        push!(matches, ("remote", remote_coll, remote_path))
+    end
+
+    # Check for ambiguity across ALL sources
+    if length(matches) > 1
+        sources = ["$(source_type):$(coll)" for (source_type, coll, _) in matches]
+        error("Ambiguous case name '$name_or_path' found in multiple locations: $sources. " *
+              "Use 'collection/case' format to specify.")
+    end
+
+    # Load the single match
+    if length(matches) == 1
+        source_type, _, location = matches[1]
+        if source_type == "bundled"
+            return _load_bundled_case(name_or_path, location)
+        else  # remote
+            return _load_remote_case(location)
+        end
     end
 
     # Not found
     available = cases()
-    error("Unknown case: '$name_or_path'. Available cases: $(join(available, ", "))")
+    error("Unknown case: '$name_or_path'. Available: $(join(available[1:min(10, end)], ", "))")
 end
 
 function _load_bundled_case(name::AbstractString, dir::AbstractString)
@@ -228,20 +299,34 @@ function _load_local_case(dir::AbstractString)
     CaseBundle(basename(dir), abspath(dir), manifest, false)
 end
 
-function _load_remote_case(name::AbstractString)
+function _load_remote_case(name_or_path::AbstractString)
+    """
+    Load a remote case, downloading if necessary.
+
+    Args:
+        name_or_path: Case name or collection/case path (e.g., "synthetic/ACTIVSg2000")
+    """
     # Download if not cached
-    if !is_case_cached(name)
-        download(name)
+    if !is_case_cached(name_or_path)
+        download(name_or_path)
     end
 
-    dir = get_cached_case_dir(name)
+    dir = get_cached_case_dir(name_or_path)
     manifest_path = joinpath(dir, "manifest.toml")
     if isfile(manifest_path)
         manifest = parse_manifest(manifest_path)
     else
         manifest = infer_manifest(dir)
     end
-    CaseBundle(name, dir, manifest, true)
+
+    # Extract case name from "collection/case_name" or use as-is
+    if occursin("/", name_or_path)
+        case_name = split(name_or_path, "/")[end]
+    else
+        case_name = name_or_path
+    end
+
+    CaseBundle(case_name, dir, manifest, true)
 end
 
 """
@@ -406,31 +491,222 @@ function get_citations(cb::CaseBundle)
 end
 
 """
-    cases() -> Vector{String}
+    _validate_path_component(component::AbstractString)
 
-List all available case names (bundled + remote + cached).
+Validate that a path component is safe (no directory traversal).
+
+Throws ArgumentError if component contains unsafe characters or patterns.
 """
-function cases()
-    result = Set{String}()
+function _validate_path_component(component::AbstractString)
+    isempty(component) && throw(ArgumentError("Path component cannot be empty"))
 
-    # Bundled cases
-    if isdir(CASES_DIR)
-        for entry in readdir(CASES_DIR)
-            path = joinpath(CASES_DIR, entry)
-            if isdir(path) && !startswith(entry, ".")
-                push!(result, entry)
+    # Check for directory traversal
+    if occursin(r"[/\\]", component) || occursin("..", component)
+        throw(ArgumentError("Invalid path component: '$component' contains path separators or '..'"))
+    end
+
+    # Check for absolute paths
+    if startswith(component, "/") || (Sys.iswindows() && occursin(r"^[A-Za-z]:", component))
+        throw(ArgumentError("Invalid path component: '$component' is an absolute path"))
+    end
+
+    return true
+end
+
+"""
+    _find_case_in_collections(case_name::AbstractString) -> Vector{String}
+
+Search all collection directories for a case by name.
+Returns list of all matching case directory paths.
+
+Throws ArgumentError if case_name contains unsafe characters.
+"""
+function _find_case_in_collections(case_name::AbstractString)
+    # Validate case name for security
+    _validate_path_component(case_name)
+
+    matches = String[]
+    isdir(CASES_DIR) || return matches
+
+    # Check top-level (legacy flat structure)
+    top_level_case = joinpath(CASES_DIR, case_name)
+    if isdir(top_level_case)
+        # Verify resolved path is within CASES_DIR
+        if startswith(abspath(top_level_case), abspath(CASES_DIR))
+            push!(matches, top_level_case)
+        end
+    end
+
+    # Search collection subdirectories
+    for coll_dir in readdir(CASES_DIR)
+        coll_path = joinpath(CASES_DIR, coll_dir)
+        isdir(coll_path) && !startswith(coll_dir, ".") || continue
+
+        case_dir = joinpath(coll_path, case_name)
+        if isdir(case_dir)
+            # Verify resolved path is within collection
+            if startswith(abspath(case_dir), abspath(coll_path))
+                push!(matches, case_dir)
             end
         end
     end
 
-    # Remote cases from registry
-    for name in list_remote_cases()
-        push!(result, name)
+    matches
+end
+
+"""
+    _find_remote_case_by_name(case_name::AbstractString) -> Union{String, Nothing}
+
+Search remote_cases for a case by name, return full collection/case path.
+"""
+function _find_remote_case_by_name(case_name::AbstractString)
+    remote_cases = list_remote_cases()
+    matches = String[]
+
+    for remote_path in remote_cases
+        # Extract case name from "collection/case_name" or flat "case_name" format
+        if occursin("/", remote_path)
+            parts = split(remote_path, "/")
+            remote_case_name = parts[end]
+        else
+            remote_case_name = remote_path
+        end
+
+        if remote_case_name == case_name
+            push!(matches, remote_path)
+        end
+    end
+
+    if length(matches) > 1
+        error("Ambiguous remote case '$case_name' found in multiple collections: $matches")
+    end
+
+    length(matches) > 0 ? matches[1] : nothing
+end
+
+"""
+    cases(; collection=nothing, tag=nothing) -> Vector{String}
+
+List all available case names with optional filtering.
+
+# Arguments
+- `collection`: Filter by collection name (e.g., "ieee-transmission")
+- `tag`: Filter by tag (e.g., "benchmark")
+
+# Examples
+```julia
+cases()                                # All cases
+cases(collection="ieee-transmission")  # Filter by collection
+cases(tag="benchmark")                 # Filter by tag
+```
+"""
+function cases(;
+    collection::Union{String, Nothing}=nothing,
+    tag::Union{String, Nothing}=nothing
+)
+    result = Dict{String, Tuple{Union{String, Nothing}, Vector{String}}}()
+
+    # Bundled cases - scan for manifests recursively
+    if isdir(CASES_DIR)
+        for (root, dirs, files) in walkdir(CASES_DIR)
+            if "manifest.toml" in files
+                case_dir = root
+                case_name = basename(case_dir)
+                startswith(case_name, ".") && continue
+
+                # Determine collection
+                coll_dir = dirname(case_dir)
+                coll_name = coll_dir == CASES_DIR ? nothing : basename(coll_dir)
+
+                # Parse manifest for tags
+                try
+                    manifest_path = joinpath(case_dir, "manifest.toml")
+                    manifest = parse_manifest(manifest_path)
+                    tags = manifest.tags
+                    result[case_name] = (coll_name, tags)
+                catch
+                    result[case_name] = (coll_name, String[])
+                end
+            end
+        end
+
+        # Cases without manifests (inferred)
+        for coll_dir in readdir(CASES_DIR)
+            coll_path = joinpath(CASES_DIR, coll_dir)
+            isdir(coll_path) && !startswith(coll_dir, ".") || continue
+
+            for case_dir in readdir(coll_path)
+                case_path = joinpath(coll_path, case_dir)
+                if isdir(case_path) && !haskey(result, case_dir)
+                    result[case_dir] = (coll_dir, String[])
+                end
+            end
+        end
+    end
+
+    # Remote cases from registry - extract case names
+    for remote_path in list_remote_cases()
+        if occursin("/", remote_path)
+            parts = split(remote_path, "/")
+            case_name = parts[end]
+            coll_name = length(parts) > 1 ? parts[1] : nothing
+        else
+            case_name = remote_path
+            coll_name = nothing
+        end
+
+        if !haskey(result, case_name)
+            result[case_name] = (coll_name, String[])
+        end
     end
 
     # Cached cases
     for name in list_cached_cases()
-        push!(result, name)
+        if !haskey(result, name)
+            result[name] = (nothing, String[])
+        end
+    end
+
+    # Apply filters
+    filtered = String[]
+    for (name, (coll, tag_list)) in result
+        if collection !== nothing && coll != collection
+            continue
+        end
+        if tag !== nothing && !(tag in tag_list)
+            continue
+        end
+        push!(filtered, name)
+    end
+
+    sort(filtered)
+end
+
+"""
+    collections() -> Vector{String}
+
+List all available collection names.
+
+# Examples
+```julia
+collections()  # ['ieee-distribution', 'ieee-transmission', 'matpower', 'synthetic', 'test']
+```
+"""
+function collections()
+    result = Set{String}()
+
+    if isdir(CASES_DIR)
+        for entry in readdir(CASES_DIR)
+            path = joinpath(CASES_DIR, entry)
+            if isdir(path) && !startswith(entry, ".")
+                # Check if it has a collection.toml or contains case subdirectories
+                if isfile(joinpath(path, "collection.toml"))
+                    push!(result, entry)
+                elseif any(isdir(joinpath(path, e)) for e in readdir(path) if !startswith(e, "."))
+                    push!(result, entry)
+                end
+            end
+        end
     end
 
     sort(collect(result))

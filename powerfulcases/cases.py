@@ -150,6 +150,26 @@ class CaseBundle:
         """Get the list of publications to cite when using this case."""
         return self.manifest.credits.citations if self.manifest.credits else []
 
+    # Collection and tags API
+    @property
+    def collection(self) -> Optional[str]:
+        """Get the collection identifier, or None if not in a collection."""
+        # First check manifest
+        if hasattr(self.manifest, 'collection') and self.manifest.collection:
+            return self.manifest.collection
+        # Infer from directory structure
+        case_path = Path(self.dir)
+        if case_path.parent.name != "cases":
+            return case_path.parent.name
+        return None
+
+    @property
+    def tags(self) -> List[str]:
+        """Get the list of tags for this case."""
+        if hasattr(self.manifest, 'tags'):
+            return self.manifest.tags
+        return []
+
     # Legacy API methods for backward compatibility
     def get_dyr(self, variant: str) -> str:
         """
@@ -204,35 +224,87 @@ def load(name_or_path: str) -> CaseBundle:
     """
     Load a case bundle by name or path.
 
+    The API automatically searches all collections (bundled + remote) to find the case.
+    Users don't need to know which collection a case belongs to.
+
     Args:
-        name_or_path: Either a case name (e.g., "ieee14") or a path to a local directory
+        name_or_path: Either a case name (e.g., "ieee14"), a collection/case path
+                      (e.g., "ieee-transmission/ieee14"), or a path to a local directory
 
     Returns:
         CaseBundle object
 
     Examples:
-        case = load("ieee14")        # Built-in case
-        case = load("/path/to/dir")  # Local directory
+        case = load("ieee14")                       # Searches all collections
+        case = load("ieee-transmission/ieee14")     # Explicit collection
+        case = load("/path/to/dir")                 # Local directory
+
+    Raises:
+        ValueError: If case not found or if case name is ambiguous
     """
     path = Path(name_or_path)
 
-    # Check if it's a directory path
+    # 1. Check if it's a directory path
     if path.is_dir():
         return _load_local_case(path)
 
-    # Check if it's a known bundled case
-    bundled_dir = CASES_DIR / name_or_path
-    if bundled_dir.is_dir():
-        return _load_bundled_case(name_or_path, bundled_dir)
+    # 2. Check if it's a collection/case path
+    if "/" in name_or_path:
+        parts = name_or_path.split("/")
 
-    # Check if it's a remote case
-    if is_remote_case(name_or_path):
-        return _load_remote_case(name_or_path)
+        # Validate each path component for security
+        for part in parts:
+            _validate_path_component(part)
+
+        bundled_dir = CASES_DIR.joinpath(*parts)
+
+        # Verify resolved path is within CASES_DIR
+        if bundled_dir.is_dir() and bundled_dir.resolve().is_relative_to(CASES_DIR.resolve()):
+            return _load_bundled_case(parts[-1], bundled_dir)
+
+        # Also check if it's a remote case with collection/case format
+        if is_remote_case(name_or_path):
+            return _load_remote_case(name_or_path)
+
+    # 3. Collect ALL matches from both bundled and remote sources
+    matches = []  # List of (source_type, collection, location) tuples
+
+    # Bundled matches
+    case_dirs = _find_case_in_collections(name_or_path)
+    for case_dir in case_dirs:
+        coll_name = case_dir.parent.name if case_dir.parent != CASES_DIR else "(root)"
+        matches.append(("bundled", coll_name, case_dir))
+
+    # Remote matches
+    remote_path = _find_remote_case_by_name(name_or_path)
+    if remote_path:
+        # Extract collection from remote_path (e.g., "collection/case")
+        if "/" in remote_path:
+            remote_coll = remote_path.split("/")[0]
+        else:
+            remote_coll = "(root)"
+        matches.append(("remote", remote_coll, remote_path))
+
+    # Check for ambiguity across ALL sources
+    if len(matches) > 1:
+        sources = [f"{source_type}:{coll}" for source_type, coll, _ in matches]
+        raise ValueError(
+            f"Ambiguous case name '{name_or_path}' found in multiple locations: {sources}. "
+            f"Use 'collection/case' format to specify."
+        )
+
+    # Load the single match
+    if len(matches) == 1:
+        source_type, _, location = matches[0]
+        if source_type == "bundled":
+            return _load_bundled_case(name_or_path, location)
+        else:  # remote
+            return _load_remote_case(location)
 
     # Not found
     available = cases()
     raise ValueError(
-        f"Unknown case: '{name_or_path}'. Available cases: {', '.join(available)}"
+        f"Unknown case: '{name_or_path}'. Available: {', '.join(available[:10])}"
     )
 
 
@@ -256,18 +328,30 @@ def _load_local_case(directory: Path) -> CaseBundle:
     return CaseBundle(directory.name, directory.absolute(), manifest, is_remote=False)
 
 
-def _load_remote_case(name: str) -> CaseBundle:
-    """Load a remote case, downloading if necessary."""
-    if not is_case_cached(name):
-        _download_remote(name)
+def _load_remote_case(name_or_path: str) -> CaseBundle:
+    """
+    Load a remote case, downloading if necessary.
 
-    directory = get_cached_case_dir(name)
+    Args:
+        name_or_path: Case name or collection/case path (e.g., "synthetic/ACTIVSg2000")
+    """
+    if not is_case_cached(name_or_path):
+        _download_remote(name_or_path)
+
+    directory = get_cached_case_dir(name_or_path)
     manifest_path = directory / "manifest.toml"
     if manifest_path.is_file():
         manifest = parse_manifest(manifest_path)
     else:
         manifest = infer_manifest(directory)
-    return CaseBundle(name, directory, manifest, is_remote=True)
+
+    # Extract case name from "collection/case_name" or use as-is
+    if "/" in name_or_path:
+        case_name = name_or_path.split("/")[-1]
+    else:
+        case_name = name_or_path
+
+    return CaseBundle(case_name, directory, manifest, is_remote=True)
 
 
 def file(
@@ -367,28 +451,227 @@ def variants(case: CaseBundle, format: str) -> List[str]:
     return _variants(case.manifest, actual_format)
 
 
-def cases() -> List[str]:
+def _validate_path_component(component: str) -> None:
+    """Validate that a path component is safe (no directory traversal).
+
+    Args:
+        component: Path component to validate
+
+    Raises:
+        ValueError: If component contains unsafe characters or patterns
     """
-    List all available case names (bundled + remote + cached).
+    if not component:
+        raise ValueError("Path component cannot be empty")
+
+    # Check for directory traversal
+    if ".." in component or "/" in component or "\\" in component:
+        raise ValueError(
+            f"Invalid path component: '{component}' contains path separators or '..'"
+        )
+
+    # Check for absolute paths
+    if component.startswith("/") or (len(component) > 1 and component[1] == ":"):
+        raise ValueError(f"Invalid path component: '{component}' is an absolute path")
+
+
+def _is_safe_subpath(child: Path, parent: Path) -> bool:
+    """
+    Verify that resolved child path is within parent directory (prevents path traversal).
+
+    Args:
+        child: Path to validate
+        parent: Base directory that should contain child
+
+    Returns:
+        True if child is within parent after resolving symlinks
+    """
+    try:
+        return child.resolve().is_relative_to(parent.resolve())
+    except (ValueError, OSError):
+        # Broken symlinks or permission issues
+        return False
+
+
+def _find_case_in_collections(case_name: str) -> List[Path]:
+    """
+    Search all collection directories for a case by name.
+
+    Args:
+        case_name: Case name to search for
+
+    Returns:
+        List of all matching case directory paths (may be empty or have duplicates)
+
+    Raises:
+        ValueError: If case_name contains unsafe characters
+    """
+    # Validate case name for security
+    _validate_path_component(case_name)
+
+    matches = []
+    if not CASES_DIR.is_dir():
+        return matches
+
+    # Check top-level (legacy flat structure)
+    top_level_case = CASES_DIR / case_name
+    if top_level_case.is_dir():
+        # Verify resolved path is within CASES_DIR
+        if top_level_case.resolve().is_relative_to(CASES_DIR.resolve()):
+            matches.append(top_level_case)
+
+    # Search collection subdirectories
+    for coll_dir in CASES_DIR.iterdir():
+        if not coll_dir.is_dir() or coll_dir.name.startswith("."):
+            continue
+        case_dir = coll_dir / case_name
+        if case_dir.is_dir():
+            # Verify resolved path is within collection
+            if case_dir.resolve().is_relative_to(coll_dir.resolve()):
+                matches.append(case_dir)
+
+    return matches
+
+
+def _find_remote_case_by_name(case_name: str) -> Optional[str]:
+    """
+    Search remote_cases for a case by name, return full collection/case path.
+
+    Args:
+        case_name: Case name to search for
+
+    Returns:
+        Full "collection/case_name" path if found, None otherwise
+
+    Raises:
+        ValueError: If case name is ambiguous (found in multiple collections)
+    """
+    remote_cases = list_remote_cases()
+    matches = []
+
+    for remote_path in remote_cases:
+        # Extract case name from "collection/case_name" or flat "case_name" format
+        if "/" in remote_path:
+            parts = remote_path.split("/")
+            remote_case_name = parts[-1]
+        else:
+            remote_case_name = remote_path
+
+        if remote_case_name == case_name:
+            matches.append(remote_path)
+
+    if len(matches) > 1:
+        raise ValueError(
+            f"Ambiguous remote case '{case_name}' found in multiple collections: {matches}"
+        )
+
+    return matches[0] if matches else None
+
+
+def cases(
+    collection: Optional[str] = None,
+    tag: Optional[str] = None
+) -> List[str]:
+    """
+    List all available case names with optional filtering.
+
+    Args:
+        collection: Filter by collection name (e.g., "ieee-transmission")
+        tag: Filter by tag (e.g., "benchmark")
 
     Returns:
         Sorted list of case names
+
+    Examples:
+        cases()                                # All cases
+        cases(collection="ieee-transmission")  # Filter by collection
+        cases(tag="benchmark")                 # Filter by tag
     """
-    result = set()
+    result = {}  # name -> (collection, tags)
 
-    # Bundled cases
+    # Bundled cases - scan for manifests recursively
     if CASES_DIR.is_dir():
-        for entry in CASES_DIR.iterdir():
-            if entry.is_dir() and not entry.name.startswith("."):
-                result.add(entry.name)
+        for manifest_path in CASES_DIR.rglob("manifest.toml"):
+            case_dir = manifest_path.parent
+            case_name = case_dir.name
+            if case_name.startswith("."):
+                continue
 
-    # Remote cases from registry
-    for name in list_remote_cases():
-        result.add(name)
+            # Determine collection from parent directory
+            coll_dir = case_dir.parent
+            if coll_dir == CASES_DIR:
+                coll_name = None  # Legacy flat case
+            else:
+                coll_name = coll_dir.name
+
+            # Parse manifest for tags
+            try:
+                manifest = parse_manifest(manifest_path)
+                tags = manifest.tags if hasattr(manifest, 'tags') else []
+            except Exception:
+                tags = []
+
+            result[case_name] = (coll_name, tags)
+
+        # Cases without manifests (inferred)
+        for coll_dir in CASES_DIR.iterdir():
+            if not coll_dir.is_dir() or coll_dir.name.startswith("."):
+                continue
+            for case_dir in coll_dir.iterdir():
+                if case_dir.is_dir() and case_dir.name not in result:
+                    result[case_dir.name] = (coll_dir.name, [])
+
+    # Remote cases from registry - extract case names
+    for remote_path in list_remote_cases():
+        # Extract case name from "collection/case_name" or flat "case_name"
+        if "/" in remote_path:
+            parts = remote_path.split("/")
+            case_name = parts[-1]
+            coll_name = parts[0] if len(parts) > 1 else None
+        else:
+            case_name = remote_path
+            coll_name = None
+
+        if case_name not in result:
+            result[case_name] = (coll_name, [])
 
     # Cached cases
     for name in list_cached_cases():
-        result.add(name)
+        if name not in result:
+            result[name] = (None, [])
+
+    # Apply filters
+    filtered = []
+    for name, (coll, tag_list) in result.items():
+        if collection is not None and coll != collection:
+            continue
+        if tag is not None and tag not in tag_list:
+            continue
+        filtered.append(name)
+
+    return sorted(filtered)
+
+
+def collections() -> List[str]:
+    """
+    List all available collection names.
+
+    Returns:
+        Sorted list of collection names
+
+    Examples:
+        >>> collections()
+        ['ieee-distribution', 'ieee-transmission', 'matpower', 'synthetic', 'test']
+    """
+    result = set()
+
+    if CASES_DIR.is_dir():
+        for entry in CASES_DIR.iterdir():
+            if entry.is_dir() and not entry.name.startswith("."):
+                # Check if it has a collection.toml or contains case subdirectories
+                if (entry / "collection.toml").is_file():
+                    result.add(entry.name)
+                elif any(e.is_dir() for e in entry.iterdir() if not e.name.startswith(".")):
+                    result.add(entry.name)
 
     return sorted(result)
 

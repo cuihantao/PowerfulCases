@@ -1,0 +1,17 @@
+name = "synthetic"
+title = "ACTIVS Synthetic Power Grids"
+description = "Synthetic power system models with realistic topology and electrical characteristics, spanning multiple scales from 200-bus to 82,000-bus systems"
+
+[metadata]
+category = "synthetic"
+maintained = true
+recommended_for = ["large_scale", "cascading_failure", "resilience"]
+scales = ["small", "medium", "large", "xlarge"]
+
+[[citations]]
+text = "A. B. Birchfield, T. Xu, K. M. Gegner, K. S. Shetye, T. J. Overbye, 'Grid Structural Characteristics as Validation Criteria for Synthetic Networks,' IEEE Trans. Power Systems, vol. 32, no. 4, pp. 3258-3265, July 2017"
+doi = "10.1109/TPWRS.2016.2616385"
+
+[[citations]]
+text = "Electric Grid Test Case Repository, Texas A&M University"
+url = "https://electricgrids.engr.tamu.edu/"

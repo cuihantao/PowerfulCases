@@ -115,6 +115,8 @@ Describes a case bundle and its contents.
 - `name::String`: Case name (e.g., "ieee14")
 - `description::String`: Human-readable description
 - `data_version::Union{String, Nothing}`: When this data was created/updated
+- `collection::Union{String, Nothing}`: Collection identifier (optional)
+- `tags::Vector{String}`: List of tags for filtering (optional)
 - `files::Vector{FileEntry}`: List of files in the bundle
 - `credits::Union{Credits, Nothing}`: Attribution and licensing info (optional)
 """
@@ -122,6 +124,8 @@ struct Manifest
     name::String
     description::String
     data_version::Union{String, Nothing}
+    collection::Union{String, Nothing}
+    tags::Vector{String}
     files::Vector{FileEntry}
     credits::Union{Credits, Nothing}
 end
@@ -129,9 +133,11 @@ end
 function Manifest(name::String;
                   description::String="",
                   data_version::Union{String, Nothing}=nothing,
+                  collection::Union{String, Nothing}=nothing,
+                  tags::Vector{String}=String[],
                   files::Vector{FileEntry}=FileEntry[],
                   credits::Union{Credits, Nothing}=nothing)
-    Manifest(name, description, data_version, files, credits)
+    Manifest(name, description, data_version, collection, tags, files, credits)
 end
 
 """
@@ -145,6 +151,8 @@ function parse_manifest(path::AbstractString)
     name = get(data, "name", basename(dirname(path)))
     description = get(data, "description", "")
     data_version = get(data, "data_version", nothing)
+    collection = get(data, "collection", nothing)
+    tags = convert(Vector{String}, get(data, "tags", String[]))
 
     files = FileEntry[]
     for file_data in get(data, "files", [])
@@ -176,7 +184,7 @@ function parse_manifest(path::AbstractString)
         credits = Credits(; license, authors, maintainers, citations)
     end
 
-    Manifest(name; description, data_version, files, credits)
+    Manifest(name; description, data_version, collection, tags, files, credits)
 end
 
 """

@@ -1,0 +1,8 @@
+name = "ieee-transmission"
+title = "IEEE Transmission Test Systems"
+description = "Standard IEEE transmission test systems for power flow, optimal power flow, and transient stability analysis"
+
+[metadata]
+category = "transmission"
+maintained = true
+recommended_for = ["powerflow", "opf", "tds", "stability"]

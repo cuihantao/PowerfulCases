@@ -101,6 +101,8 @@ class Manifest:
         name: Case name (e.g., "ieee14")
         description: Human-readable description
         data_version: When this data was created/updated
+        collection: Collection identifier (optional)
+        tags: List of tags for filtering (optional)
         files: List of files in the bundle
         credits: Attribution and licensing info (optional)
     """
@@ -108,6 +110,8 @@ class Manifest:
     name: str
     description: str = ""
     data_version: Optional[str] = None
+    collection: Optional[str] = None
+    tags: List[str] = field(default_factory=list)
     files: List[FileEntry] = field(default_factory=list)
     credits: Optional[Credits] = None
 
@@ -129,6 +133,8 @@ def parse_manifest(path: Path) -> Manifest:
     name = data.get("name", path.parent.name)
     description = data.get("description", "")
     data_version = data.get("data_version", None)
+    collection = data.get("collection", None)
+    tags = data.get("tags", [])
 
     files = []
     for file_data in data.get("files", []):
@@ -163,7 +169,13 @@ def parse_manifest(path: Path) -> Manifest:
         )
 
     return Manifest(
-        name=name, description=description, data_version=data_version, files=files, credits=credits
+        name=name,
+        description=description,
+        data_version=data_version,
+        collection=collection,
+        tags=tags,
+        files=files,
+        credits=credits,
     )
 
 
@@ -235,6 +247,12 @@ def write_manifest(manifest: Manifest, path: Path) -> None:
 
     if manifest.data_version:
         data["data_version"] = manifest.data_version
+
+    if manifest.collection:
+        data["collection"] = manifest.collection
+
+    if manifest.tags:
+        data["tags"] = manifest.tags
 
     if manifest.files:
         files_data = []

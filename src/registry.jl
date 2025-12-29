@@ -68,6 +68,9 @@ falls back to bundled registry.
 
 # Arguments
 - `refresh`: If true, reload the registry from disk
+
+# Throws
+- `ErrorException`: If bundled registry cannot be loaded
 """
 function load_registry(; refresh::Bool=false)
     if !refresh && REGISTRY[] !== nothing
@@ -81,20 +84,37 @@ function load_registry(; refresh::Bool=false)
             REGISTRY[] = parse_registry(cached_path)
             return REGISTRY[]
         catch e
-            @warn "Failed to parse cached registry, using bundled" exception=e
+            # Only catch expected errors: TOML parsing, file I/O, missing keys
+            if e isa TOML.ParserError || e isa SystemError || e isa KeyError || e isa ArgumentError
+                @warn "Failed to parse cached registry at $cached_path, using bundled" exception=(e, catch_backtrace())
+            else
+                # Unexpected error - rethrow
+                rethrow()
+            end
         end
     end
 
     # Fall back to bundled registry
     bundled_path = bundled_registry_path()
     if isfile(bundled_path)
-        REGISTRY[] = parse_registry(bundled_path)
-        return REGISTRY[]
+        try
+            REGISTRY[] = parse_registry(bundled_path)
+            return REGISTRY[]
+        catch e
+            error(
+                "Failed to load bundled registry at $bundled_path. " *
+                "This indicates a corrupted PowerfulCases installation. " *
+                "Please reinstall the package. Error: $e"
+            )
+        end
     end
 
-    # No registry available, return empty
-    REGISTRY[] = Registry()
-    REGISTRY[]
+    # No registry file found - package installation issue
+    error(
+        "No registry file found at $bundled_path. " *
+        "This indicates an incomplete PowerfulCases installation. " *
+        "Please reinstall the package."
+    )
 end
 
 """

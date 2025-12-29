@@ -1,0 +1,137 @@
+name = "ieee8500_opendss"
+description = "IEEE 8500-node distribution test feeder (OpenDSS format)"
+
+[credits]
+license = "BSD-3-Clause"
+authors = ["EPRI"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "IEEE 8500 Node Test Feeder, OpenDSS Test Cases, EPRI Distribution System Simulator"
+
+[[files]]
+path = "Master.dss"
+format = "opendss"
+default = true
+
+[[files]]
+path = "Master-unbal.dss"
+format = "opendss"
+variant = "unbalanced"
+
+[[files]]
+path = "Run_8500Node.dss"
+format = "opendss"
+variant = "standard"
+
+[[files]]
+path = "Run_8500Node_Unbal.dss"
+format = "opendss"
+variant = "unbal_standard"
+
+[[files]]
+path = "Run_RecloserSiting.DSS"
+format = "opendss"
+variant = "recloser"
+
+[[files]]
+path = "P174_Run_360kW_PV.DSS"
+format = "opendss"
+variant = "pv"
+
+[[files]]
+path = "P174_Run_Voltage_Profile.DSS"
+format = "opendss"
+variant = "voltage_profile"
+
+[[files]]
+path = "CloudTransient.dss"
+format = "opendss"
+
+[[files]]
+path = "Lines.dss"
+format = "opendss"
+
+[[files]]
+path = "Lines-Geometry.dss"
+format = "opendss"
+
+[[files]]
+path = "LineCodes.dss"
+format = "opendss"
+
+[[files]]
+path = "LineCodes2.DSS"
+format = "opendss"
+
+[[files]]
+path = "LineGeometry.dss"
+format = "opendss"
+
+[[files]]
+path = "Loads.dss"
+format = "opendss"
+
+[[files]]
+path = "LoadXfmrs.dss"
+format = "opendss"
+
+[[files]]
+path = "LoadXfmrCodes.dss"
+format = "opendss"
+
+[[files]]
+path = "Capacitors.dss"
+format = "opendss"
+
+[[files]]
+path = "CapControls.DSS"
+format = "opendss"
+
+[[files]]
+path = "Regulators.dss"
+format = "opendss"
+
+[[files]]
+path = "Transformers.dss"
+format = "opendss"
+
+[[files]]
+path = "Generators.dss"
+format = "opendss"
+
+[[files]]
+path = "Fuses.DSS"
+format = "opendss"
+
+[[files]]
+path = "Feeder_Loads.dss"
+format = "opendss"
+
+[[files]]
+path = "UnbalancedLoads.DSS"
+format = "opendss"
+
+[[files]]
+path = "Triplex_Lines.DSS"
+format = "opendss"
+
+[[files]]
+path = "Triplex_Linecodes.dss"
+format = "opendss"
+
+[[files]]
+path = "TplxFaultrate.dss"
+format = "opendss"
+
+[[files]]
+path = "WireData.dss"
+format = "opendss"
+
+[[files]]
+path = "Buscoords.dss"
+format = "opendss"
+
+[[files]]
+path = "Normalized-1s-2900-pts.CSV"
+format = "csv"

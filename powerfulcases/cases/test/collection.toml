@@ -1,0 +1,9 @@
+name = "test"
+title = "Testing and Development Cases"
+description = "Minimal test cases for development and testing"
+
+[metadata]
+category = "test"
+maintained = true
+recommended_for = ["testing", "development"]
+internal_use = true

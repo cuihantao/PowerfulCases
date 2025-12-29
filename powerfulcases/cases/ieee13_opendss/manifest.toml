@@ -1,0 +1,23 @@
+name = "ieee13_opendss"
+description = "IEEE 13-bus distribution test feeder (OpenDSS format)"
+
+[credits]
+license = "BSD-3-Clause"
+authors = ["EPRI"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "IEEE 13 Node Test Feeder, OpenDSS Test Cases, EPRI Distribution System Simulator"
+
+[[files]]
+path = "IEEE13Nodeckt.dss"
+format = "opendss"
+default = true
+
+[[files]]
+path = "IEEELineCodes.DSS"
+format = "opendss"
+
+[[files]]
+path = "IEEE13Node_BusXY.csv"
+format = "csv"

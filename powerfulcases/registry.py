@@ -80,6 +80,9 @@ def load_registry(refresh: bool = False) -> Registry:
 
     Returns:
         Registry object
+
+    Raises:
+        RuntimeError: If bundled registry cannot be loaded
     """
     global _registry
 
@@ -92,20 +95,33 @@ def load_registry(refresh: bool = False) -> Registry:
         try:
             _registry = parse_registry(cached_path)
             return _registry
-        except Exception as e:
+        except (tomllib.TOMLDecodeError, OSError, KeyError, ValueError) as e:
             import warnings
 
-            warnings.warn(f"Failed to parse cached registry, using bundled: {e}")
+            warnings.warn(
+                f"Failed to parse cached registry at {cached_path}, using bundled: {e}",
+                stacklevel=2
+            )
 
     # Fall back to bundled registry
     bundled_path = bundled_registry_path()
     if bundled_path.is_file():
-        _registry = parse_registry(bundled_path)
-        return _registry
+        try:
+            _registry = parse_registry(bundled_path)
+            return _registry
+        except (tomllib.TOMLDecodeError, OSError, KeyError, ValueError) as e:
+            raise RuntimeError(
+                f"Failed to load bundled registry at {bundled_path}. "
+                f"This indicates a corrupted PowerfulCases installation. "
+                f"Please reinstall the package. Error: {e}"
+            ) from e
 
-    # No registry available, return empty
-    _registry = Registry()
-    return _registry
+    # No registry file found - package installation issue
+    raise RuntimeError(
+        f"No registry file found at {bundled_path}. "
+        f"This indicates an incomplete PowerfulCases installation. "
+        f"Please reinstall the package."
+    )
 
 
 def list_remote_cases() -> List[str]:

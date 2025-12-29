@@ -9,24 +9,28 @@
 # - Python build: setup.py generates exclude list from this file
 # =============================================================================
 
-version = "1.0.0"
+version = "2.0.0"
 
 # Base URL for raw file downloads from GitHub
-# Files are fetched as: {base_url}/{case_name}/{filename}
-# Example: .../powerfulcases/cases/ACTIVSg2000/manifest.toml
+# Files are fetched as: {base_url}/{collection}/{case_name}/{filename}
+# Example: .../powerfulcases/cases/synthetic/ACTIVSg2000/manifest.toml
 base_url = "https://raw.githubusercontent.com/cuihantao/PowerfulCases/main/powerfulcases/cases"
 
 # Cases that are too large to bundle in the Python wheel (>2MB).
 # These exist in the git repository but must be downloaded separately
 # when installed via pip.
+# Format: "collection/case_name"
 remote_cases = [
-    "ACTIVSg2000",
-    "ACTIVSg10k",
-    "ACTIVSg70k",
-    # MATPOWER format cases
-    "case_ACTIVSg10k",
-    "case_ACTIVSg25k",
-    "case_ACTIVSg70k",
-    "case_SyntheticUSA",
-    "case13659pegase",
+    # Synthetic cases
+    "synthetic/ACTIVSg2000",
+    "synthetic/ACTIVSg10k",
+    "synthetic/ACTIVSg70k",
+    "synthetic/case_ACTIVSg10k",
+    "synthetic/case_ACTIVSg25k",
+    "synthetic/case_ACTIVSg70k",
+    "synthetic/case_SyntheticUSA",
+    # MATPOWER cases
+    "matpower/case13659pegase",
+    # OpenDSS cases
+    "ieee-distribution/ieee8500_opendss",
 ]

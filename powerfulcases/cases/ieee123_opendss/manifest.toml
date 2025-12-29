@@ -1,0 +1,95 @@
+name = "ieee123_opendss"
+description = "IEEE 123-bus distribution test feeder (OpenDSS format)"
+
+[credits]
+license = "BSD-3-Clause"
+authors = ["EPRI"]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "IEEE 123 Node Test Feeder, OpenDSS Test Cases, EPRI Distribution System Simulator"
+
+[[files]]
+path = "IEEE123Master.dss"
+format = "opendss"
+default = true
+
+[[files]]
+path = "Run_IEEE123Bus.DSS"
+format = "opendss"
+variant = "standard"
+
+[[files]]
+path = "Run_YearlySim.dss"
+format = "opendss"
+variant = "yearly"
+
+[[files]]
+path = "P174_Run_SolarRamp.DSS"
+format = "opendss"
+variant = "solar_ramp"
+
+[[files]]
+path = "P174_Run_VoltageProfile.DSS"
+format = "opendss"
+variant = "voltage_profile"
+
+[[files]]
+path = "RevRegTest.dss"
+format = "opendss"
+
+[[files]]
+path = "IEEE123Loads.DSS"
+format = "opendss"
+
+[[files]]
+path = "IEEE123Regulators.DSS"
+format = "opendss"
+
+[[files]]
+path = "IEEELineCodes.DSS"
+format = "opendss"
+
+[[files]]
+path = "SetDailyLoadShape.DSS"
+format = "opendss"
+
+[[files]]
+path = "SolarRamp.DSS"
+format = "opendss"
+
+[[files]]
+path = "SolarRamp-Mack.DSS"
+format = "opendss"
+
+[[files]]
+path = "WindRamp.DSS"
+format = "opendss"
+
+[[files]]
+path = "WindRampRevRegTest.DSS"
+format = "opendss"
+
+[[files]]
+path = "CircuitPlottingScripts.dss"
+format = "opendss"
+
+[[files]]
+path = "BusCoords.dat"
+format = "text"
+
+[[files]]
+path = "PV5sdata1.csv"
+format = "csv"
+
+[[files]]
+path = "PaperLoadShape.txt"
+format = "text"
+
+[[files]]
+path = "SolarRamp.csv"
+format = "csv"
+
+[[files]]
+path = "StorageRamp.CSV"
+format = "csv"
