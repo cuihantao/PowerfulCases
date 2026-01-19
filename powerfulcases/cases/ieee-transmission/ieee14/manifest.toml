@@ -46,6 +46,16 @@ format = "psse_dyr"
 variant = "gentpj1_highsat"
 
 [[files]]
+path = "ieee14_regca1.dyr"
+format = "psse_dyr"
+variant = "regca1"
+
+[[files]]
+path = "ieee14_reeca1.dyr"
+format = "psse_dyr"
+variant = "reeca1"
+
+[[files]]
 path = "ieee14.xlsx"
 format = "andes"
 
