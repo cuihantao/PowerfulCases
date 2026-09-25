@@ -1,0 +1,19 @@
+name = "case_ieee30"
+description = "MATPOWER case_ieee30 test case"
+
+[credits]
+maintainers = ["PowerfulCases Contributors"]
+
+[[credits.citations]]
+text = "R. D. Zimmerman, C. E. Murillo-Sanchez, R. J. Thomas, 'MATPOWER: Steady-State Operations, Planning, and Analysis Tools for Power Systems Research and Education,' IEEE Trans. Power Systems, vol. 26, no. 1, pp. 12-19, Feb. 2011"
+doi = "10.1109/TPWRS.2010.2051168"
+
+[[files]]
+path = "case_ieee30.raw"
+format = "psse_raw"
+format_version = "33"
+default = true
+
+[[files]]
+path = "case_ieee30.m"
+format = "matpower"

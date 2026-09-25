@@ -34,7 +34,7 @@ class TestCasesFiltering:
         """cases() without filter returns all cases."""
         all_cases = cases()
         assert isinstance(all_cases, list)
-        assert len(all_cases) == 88  # Total expected cases
+        assert len(all_cases) == 96  # Total expected cases
 
     def test_cases_filter_by_collection(self):
         """cases(collection=...) filters correctly."""
@@ -117,9 +117,9 @@ class TestBackwardCompatibility:
         assert case.name == 'ieee14'
 
     def test_cases_returns_all_cases(self):
-        """cases() returns all 88 cases."""
+        """cases() returns all 96 cases."""
         all_cases = cases()
-        assert len(all_cases) == 88
+        assert len(all_cases) == 96
         assert 'ieee14' in all_cases
         assert 'ACTIVSg2000' in all_cases
         assert 'case118zh' in all_cases
