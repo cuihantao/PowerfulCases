@@ -432,6 +432,37 @@ end
     list_files(cb::CaseBundle) -> Vector{NamedTuple}
 
 List all files in a case bundle with their metadata.
+
+Returns a vector of named tuples containing file paths and format information.
+Useful for discovering available files and their formats before loading.
+
+# Returns
+Vector of `(path, format, format_version, variant, default, includes)` tuples:
+- `path::String`: Relative file path
+- `format::Symbol`: File format (`:psse_raw`, `:psse_dyr`, etc.)
+- `format_version::String`: Format version (e.g., "33")
+- `variant::String`: Variant name (e.g., "genrou", "gencls")
+- `default::Bool`: Whether this is the default file for its format
+- `includes::Vector{String}`: Included files (for DYR)
+
+# Example
+```julia
+case = load("ieee14")
+files = list_files(case)
+
+for f in files
+    println("\$(f.path) [\$(f.format)] variant=\$(f.variant)")
+end
+# Output:
+# ieee14.raw [psse_raw] variant=
+# ieee14_gencls.dyr [psse_dyr] variant=gencls
+# ieee14_genrou.dyr [psse_dyr] variant=genrou
+```
+
+# See Also
+- [`file`](@ref): Get path to a specific file by format/variant
+- [`formats`](@ref): List available formats
+- [`variants`](@ref): List available variants for a format
 """
 function list_files(cb::CaseBundle)
     [(path=f.path, format=f.format, format_version=f.format_version,
@@ -821,7 +852,34 @@ end
 """
     get_dyr(cb::CaseBundle, variant::String) -> String
 
-Get the path to a DYR variant file. Convenience function.
+Get the absolute file path for a specific DYR (dynamic model) variant.
+
+DYR files contain dynamic models (generators, governors, exciters) in PSS/E format.
+Cases often provide multiple variants with different model fidelity levels (e.g.,
+GENCLS for classical, GENROU for detailed generator models).
+
+# Arguments
+- `cb::CaseBundle`: Loaded case bundle
+- `variant::String`: Variant name (e.g., "gencls", "genrou")
+
+# Returns
+Absolute path to the DYR file.
+
+# Errors
+Throws if variant not found (use `list_dyr_variants` to check availability).
+
+# Example
+```julia
+case = load("ieee14")
+list_dyr_variants(case)  # ["gencls", "genrou"]
+
+dyr_path = get_dyr(case, "genrou")
+dyr_data = parse_dyr(dyr_path)
+```
+
+# See Also
+- [`list_dyr_variants`](@ref): List available DYR variants
+- [`file`](@ref): Generic file access by format/variant
 """
 function get_dyr(cb::CaseBundle, variant::String)
     file(cb, :psse_dyr; variant=variant)
@@ -830,7 +888,31 @@ end
 """
     list_dyr_variants(cb::CaseBundle) -> Vector{String}
 
-List available DYR variants for a case.
+List available DYR (dynamic model) file variants for a case.
+
+Returns variant names that can be passed to `get_dyr` or used with
+`file(case, :psse_dyr; variant=...)`.
+
+# Returns
+Vector of variant name strings (e.g., `["gencls", "genrou"]`).
+Empty vector if case has no DYR files.
+
+# Example
+```julia
+case = load("ieee14")
+variants = list_dyr_variants(case)
+# ["gencls", "genrou"]
+
+# Use with get_dyr
+for var in variants
+    dyr = get_dyr(case, var)
+    println("Variant \$var: \$dyr")
+end
+```
+
+# See Also
+- [`get_dyr`](@ref): Get DYR file path by variant
+- [`variants`](@ref): Generic variant listing for any format
 """
 function list_dyr_variants(cb::CaseBundle)
     variants(cb, :psse_dyr)
