@@ -30,6 +30,12 @@ remote_cases = [
     "synthetic/case_ACTIVSg70k",
     "synthetic/case_SyntheticUSA",
     # MATPOWER cases
+    "matpower/case6468rte",
+    "matpower/case6470rte",
+    "matpower/case6495rte",
+    "matpower/case6515rte",
+    "matpower/case8387pegase",
+    "matpower/case9241pegase",
     "matpower/case13659pegase",
     # OpenDSS cases
     "ieee-distribution/ieee8500_opendss",

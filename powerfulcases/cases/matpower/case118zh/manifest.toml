@@ -10,6 +10,11 @@ text = "R. D. Zimmerman, C. E. Murillo-Sanchez, R. J. Thomas, 'MATPOWER: Steady-
 doi = "10.1109/TPWRS.2010.2051168"
 
 [[files]]
+path = "case118zh.raw"
+format = "psse_raw"
+format_version = "33"
+default = true
+
+[[files]]
 path = "case118zh.m"
 format = "matpower"
-default = true
