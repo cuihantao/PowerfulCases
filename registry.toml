@@ -26,7 +26,7 @@ remote_cases = [
     "synthetic/ACTIVSg10k",
     "synthetic/ACTIVSg70k",
     "synthetic/case_ACTIVSg10k",
-    "synthetic/case_ACTIVSg25k",
+    "synthetic/ACTIVSg25k",
     "synthetic/case_ACTIVSg70k",
     "synthetic/case_SyntheticUSA",
     # MATPOWER cases

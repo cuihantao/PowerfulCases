@@ -1,4 +1,4 @@
-name = "case_ACTIVSg25k"
+name = "ACTIVSg25k"
 description = "Synthetic US NE/Mid-Atlantic 25,000-bus power system model."
 
 [credits]
@@ -13,6 +13,11 @@ text = "R. D. Zimmerman, C. E. Murillo-Sanchez, R. J. Thomas, 'MATPOWER: Steady-
 doi = "10.1109/TPWRS.2010.2051168"
 
 [[files]]
-path = "case_ACTIVSg25k.m"
-format = "matpower"
+path = "ACTIVSg25k.raw"
+format = "psse_raw"
+format_version = "33"
 default = true
+
+[[files]]
+path = "ACTIVSg25k.m"
+format = "matpower"
