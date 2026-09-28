@@ -94,7 +94,11 @@ function cb = load(name_or_path)
         else
             remote_coll = '(root)';
         end
-        matches{end+1} = struct('source', 'remote', 'collection', remote_coll, 'location', remote_path);
+        % A bundled copy in the same collection is the same case: load it, no download
+        same_case = any(cellfun(@(m) strcmp(m.collection, remote_coll), matches));
+        if ~same_case
+            matches{end+1} = struct('source', 'remote', 'collection', remote_coll, 'location', remote_path);
+        end
     end
 
     % Check for ambiguity across ALL sources

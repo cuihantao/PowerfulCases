@@ -57,6 +57,13 @@ using PowerfulCases
 
         # Unknown case raises error
         @test_throws ErrorException load("nonexistent_case_xyz")
+
+        # A case bundled and listed remote in the same collection is one case: the
+        # bundled copy loads by name
+        case3 = load("ACTIVSg2000")
+        @test case3.collection == "synthetic"
+        @test case3.raw == load("synthetic/ACTIVSg2000").raw
+        @test isfile(case3.raw)
     end
 
     @testset "CaseBundle properties" begin

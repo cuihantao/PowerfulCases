@@ -288,7 +288,9 @@ def load(name_or_path: str) -> CaseBundle:
             remote_coll = remote_path.split("/")[0]
         else:
             remote_coll = "(root)"
-        matches.append(("remote", remote_coll, remote_path))
+        # A bundled copy in the same collection is the same case: load it, no download
+        if not any(coll == remote_coll for _, coll, _ in matches):
+            matches.append(("remote", remote_coll, remote_path))
 
     # Check for ambiguity across ALL sources
     if len(matches) > 1:

@@ -263,7 +263,8 @@ function load(name_or_path::AbstractString)
         else
             remote_coll = "(root)"
         end
-        push!(matches, ("remote", remote_coll, remote_path))
+        # A bundled copy in the same collection is the same case: load it, no download
+        any(m -> m[2] == remote_coll, matches) || push!(matches, ("remote", remote_coll, remote_path))
     end
 
     # Check for ambiguity across ALL sources
@@ -987,8 +988,7 @@ end
 # Pre-generate for known cases at compile time
 for name in [:ieee14, :ieee39, :ieee118, :ACTIVSg2000,
              :ACTIVSg10k, :ACTIVSg70k,
-             :case5, :case9, :npcc, :two_bus_branch, :two_bus_transformer,
-             :ieee14_fault, :ieee14_island, :ieee39_nopq31, :ieee39_rt]
+             :case5, :case9, :two_bus_branch, :two_bus_transformer]
     name_str = string(name)
     @eval begin
         """

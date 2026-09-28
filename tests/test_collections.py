@@ -87,6 +87,12 @@ class TestLoadByName:
         with pytest.raises(ValueError, match="Unknown case"):
             load('nonexistent_case_xyz')
 
+    def test_load_bundled_and_remote_same_case(self):
+        """A case bundled and listed remote in the same collection loads by name."""
+        case = load('ACTIVSg2000')
+        assert case.collection == 'synthetic'
+        assert case.raw == load('synthetic/ACTIVSg2000').raw
+
 
 class TestCaseBundleProperties:
     """Test CaseBundle collection and tags properties."""
