@@ -51,6 +51,11 @@ format = "psse_dyr"
 variant = "regca1"
 
 [[files]]
+path = "ieee14_regfm_a1.dyr"
+format = "psse_dyr"
+variant = "regfm_a1"
+
+[[files]]
 path = "ieee14_reeca1.dyr"
 format = "psse_dyr"
 variant = "reeca1"
